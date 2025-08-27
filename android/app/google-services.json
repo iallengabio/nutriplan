@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "229044261480",
+    "project_id": "nutridly",
+    "storage_bucket": "nutridly.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:229044261480:android:bc34ad5eab01397cc521dd",
+        "android_client_info": {
+          "package_name": "com.example.nutriplan"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAvJmmmXG5XUoR5DqTBz0dyk493_1Ejpnc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
