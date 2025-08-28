@@ -3,6 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'data/repositories/auth_repository_impl.dart';
 import 'domain/repositories/auth_repository.dart';
 import 'domain/models/user.dart' as domain_user;
+import 'data/repositories/settings_repository_impl.dart';
+import 'domain/repositories/settings_repository.dart';
+import 'presentation/features/settings/settings_viewmodel.dart';
+import 'presentation/features/settings/settings_state.dart';
 
 // Provider do Firebase Auth
 final firebaseAuthProvider = Provider<FirebaseAuth>((ref) {
@@ -31,4 +35,15 @@ final isAuthenticatedProvider = Provider<bool>((ref) {
 final currentUserProvider = FutureProvider<domain_user.User?>((ref) async {
   final authRepository = ref.read(authRepositoryProvider);
   return await authRepository.getCurrentUser();
+});
+
+// Provider do SettingsRepository
+final settingsRepositoryProvider = Provider<SettingsRepository>((ref) {
+  return SettingsRepositoryImpl();
+});
+
+// Provider do SettingsViewModel
+final settingsViewModelProvider = StateNotifierProvider<SettingsViewModel, SettingsState>((ref) {
+  final repository = ref.read(settingsRepositoryProvider);
+  return SettingsViewModel(repository);
 });

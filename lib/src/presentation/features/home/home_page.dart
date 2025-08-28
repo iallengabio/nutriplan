@@ -5,6 +5,7 @@ import 'home_viewmodel.dart';
 import 'cardapios/cardapios_tab.dart';
 import 'listas/listas_tab.dart';
 import 'perfil/perfil_tab.dart';
+import '../settings/settings_page.dart';
 
 class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
@@ -19,6 +20,8 @@ class _HomePageState extends ConsumerState<HomePage> with TickerProviderStateMix
   late AnimationController _fabAnimationController;
   late Animation<double> _fabAnimation;
   late Animation<double> _fabRotationAnimation;
+  late AnimationController _tabIndicatorController;
+  late Animation<double> _tabIndicatorAnimation;
   Timer? _autoCloseTimer;
 
   @override
@@ -34,6 +37,17 @@ class _HomePageState extends ConsumerState<HomePage> with TickerProviderStateMix
     _fabRotationAnimation = Tween<double>(begin: 0.0, end: 0.125).animate(
       CurvedAnimation(parent: _fabAnimationController, curve: Curves.easeInOut),
     );
+    _tabIndicatorController = AnimationController(
+      duration: const Duration(milliseconds: 400),
+      vsync: this,
+    );
+    _tabIndicatorAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _tabIndicatorController, curve: Curves.elasticOut),
+    );
+    // Inicializa a animação para a primeira aba
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _tabIndicatorController.forward();
+    });
   }
 
   Widget _buildFabWithMenu() {
@@ -125,6 +139,7 @@ class _HomePageState extends ConsumerState<HomePage> with TickerProviderStateMix
   @override
   void dispose() {
     _fabAnimationController.dispose();
+    _tabIndicatorController.dispose();
     _autoCloseTimer?.cancel();
     super.dispose();
   }
@@ -165,7 +180,110 @@ class _HomePageState extends ConsumerState<HomePage> with TickerProviderStateMix
     _autoCloseTimer = null;
   }
 
+  Widget _buildCustomBottomNavigationBar() {
+    const tabItems = [
+      {'icon': Icons.restaurant_menu, 'label': 'Cardápios'},
+      {'icon': Icons.shopping_cart, 'label': 'Listas'},
+      {'icon': Icons.people, 'label': 'Perfil'},
+    ];
 
+    const double barHeight = 85;
+    const double indicatorHeight = 32;
+
+    return Container(
+      height: barHeight,
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 10,
+            offset: const Offset(0, -2),
+          ),
+        ],
+      ),
+      child: Stack(
+        children: [
+          // Indicador animado
+          AnimatedBuilder(
+            animation: _tabIndicatorAnimation,
+            builder: (context, child) {
+              return AnimatedPositioned(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOutCubic,
+                left: (_currentIndex * (MediaQuery.of(context).size.width / 3)) + 
+                       (MediaQuery.of(context).size.width / 6) - 25,
+                 top: (barHeight / 2) - (indicatorHeight / 2) - 8, // Alinha com o centro dos ícones
+                child: Transform.scale(
+                  scale: 0.8 + (0.2 * _tabIndicatorAnimation.value),
+                  child: Container(
+                    width: 50,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+          // Itens da navegação
+          Row(
+            children: List.generate(tabItems.length, (index) {
+              final item = tabItems[index];
+              final isSelected = _currentIndex == index;
+              
+              return Expanded(
+                child: GestureDetector(
+                  onTap: () {
+                    if (_currentIndex != index) {
+                      setState(() {
+                        _currentIndex = index;
+                      });
+                      _tabIndicatorController.reset();
+                      _tabIndicatorController.forward();
+                    }
+                  },
+                  child: Container(
+                    height: barHeight,
+                    color: Colors.transparent,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                           padding: const EdgeInsets.all(8),
+                           child: Icon(
+                             item['icon'] as IconData,
+                             color: isSelected 
+                                 ? Theme.of(context).colorScheme.primary
+                                 : Theme.of(context).colorScheme.onSurfaceVariant,
+                             size: 24,
+                           ),
+                         ),
+                        const SizedBox(height: 4),
+                        AnimatedDefaultTextStyle(
+                           duration: const Duration(milliseconds: 200),
+                           style: TextStyle(
+                             fontSize: 11,
+                             fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                             color: isSelected 
+                                 ? Theme.of(context).colorScheme.primary
+                                 : Theme.of(context).colorScheme.onSurfaceVariant,
+                           ),
+                           child: Text(item['label'] as String),
+                         ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -181,7 +299,11 @@ class _HomePageState extends ConsumerState<HomePage> with TickerProviderStateMix
           IconButton(
             icon: const Icon(Icons.settings),
             onPressed: () {
-              // TODO: Navegar para tela de configurações
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const SettingsPage(),
+                ),
+              );
             },
           ),
         ],
@@ -198,31 +320,7 @@ class _HomePageState extends ConsumerState<HomePage> with TickerProviderStateMix
         ),
       ),
       floatingActionButton: _buildFabWithMenu(),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        onTap: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
-        },
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: Theme.of(context).colorScheme.primary,
-        unselectedItemColor: Theme.of(context).colorScheme.onSurfaceVariant,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.restaurant_menu),
-            label: 'Cardápios',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.shopping_cart),
-            label: 'Listas',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.people),
-            label: 'Perfil',
-          ),
-        ],
-      ),
+      bottomNavigationBar: _buildCustomBottomNavigationBar(),
     );
   }
 
