@@ -18,6 +18,7 @@ _$MenuImpl _$$MenuImplFromJson(Map<String, dynamic> json) => _$MenuImpl(
   dataUltimaEdicao: json['dataUltimaEdicao'] == null
       ? null
       : DateTime.parse(json['dataUltimaEdicao'] as String),
+  numberOfPeople: (json['numberOfPeople'] as num?)?.toInt() ?? 4,
 );
 
 Map<String, dynamic> _$$MenuImplToJson(_$MenuImpl instance) =>
@@ -29,4 +30,5 @@ Map<String, dynamic> _$$MenuImplToJson(_$MenuImpl instance) =>
       'observacoes': instance.observacoes,
       'isFavorito': instance.isFavorito,
       'dataUltimaEdicao': instance.dataUltimaEdicao?.toIso8601String(),
+      'numberOfPeople': instance.numberOfPeople,
     };

@@ -88,6 +88,7 @@ class MenuViewModel extends StateNotifier<MenuState> {
     required Set<TipoRefeicao> tiposRefeicao,
     String? nome,
     String? observacoesAdicionais,
+    int? numberOfPeople,
   }) async {
     state = state.copyWith(isGeneratingMenu: true, clearError: true);
 
@@ -96,6 +97,7 @@ class MenuViewModel extends StateNotifier<MenuState> {
       tiposRefeicao: tiposRefeicao,
       nome: nome,
       observacoesAdicionais: observacoesAdicionais,
+      numberOfPeople: numberOfPeople,
     );
 
     await result.fold(

@@ -12,6 +12,7 @@ abstract class AiApiService {
     required Set<TipoRefeicao> tiposRefeicao,
     String? nome,
     String? observacoesAdicionais,
+    int? numberOfPeople,
   });
 
   /// Gera uma refeição alternativa
@@ -27,6 +28,7 @@ abstract class AiApiService {
     required int numeroSemanas,
     String? nome,
     String? observacoes,
+    int? numberOfPeople,
   });
 }
 

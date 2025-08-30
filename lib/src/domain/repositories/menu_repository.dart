@@ -11,6 +11,7 @@ abstract class MenuRepository {
     required Set<TipoRefeicao> tiposRefeicao,
     String? nome,
     String? observacoesAdicionais,
+    int? numberOfPeople,
   });
 
   /// Salva um cardápio localmente

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../di.dart';
 import '../../../../domain/models/menu.dart';
-import '../../../../domain/models/shopping_list.dart';
 import '../../home/cardapios/menu_viewmodel.dart';
 import '../../home/listas/shopping_list_viewmodel.dart';
 
@@ -117,7 +116,7 @@ class _CreateShoppingListFromMenuPageState extends ConsumerState<CreateShoppingL
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
                   border: Border.all(
-                    color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
+                    color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
                   ),
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -152,13 +151,12 @@ class _CreateShoppingListFromMenuPageState extends ConsumerState<CreateShoppingL
                   border: Border.all(
                     color: _menuSelecionado == null 
                         ? Theme.of(context).colorScheme.error 
-                        : Theme.of(context).colorScheme.outline.withOpacity(0.3),
+                        : Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
                   ),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Column(
                   children: menuState.menus.map((menu) {
-                    final isSelected = _menuSelecionado?.id == menu.id;
                     final totalRefeicoes = menu.refeicoesPorDia.values
                         .expand((refeicoes) => refeicoes)
                         .length;
@@ -264,7 +262,7 @@ class _CreateShoppingListFromMenuPageState extends ConsumerState<CreateShoppingL
                 Container(
                   decoration: BoxDecoration(
                     border: Border.all(
-                      color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
+                      color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
                     ),
                     borderRadius: BorderRadius.circular(8),
                   ),

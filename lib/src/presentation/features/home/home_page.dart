@@ -25,11 +25,13 @@ class _HomePageState extends ConsumerState<HomePage> with TickerProviderStateMix
   late Animation<double> _fabRotationAnimation;
   late AnimationController _tabIndicatorController;
   late Animation<double> _tabIndicatorAnimation;
+  late PageController _pageController;
   Timer? _autoCloseTimer;
 
   @override
   void initState() {
     super.initState();
+    _pageController = PageController(initialPage: _currentIndex);
     _fabAnimationController = AnimationController(
       duration: const Duration(milliseconds: 300),
       vsync: this,
@@ -141,6 +143,7 @@ class _HomePageState extends ConsumerState<HomePage> with TickerProviderStateMix
 
   @override
   void dispose() {
+    _pageController.dispose();
     _fabAnimationController.dispose();
     _tabIndicatorController.dispose();
     _autoCloseTimer?.cancel();
@@ -240,11 +243,11 @@ class _HomePageState extends ConsumerState<HomePage> with TickerProviderStateMix
                 child: GestureDetector(
                   onTap: () {
                     if (_currentIndex != index) {
-                      setState(() {
-                        _currentIndex = index;
-                      });
-                      _tabIndicatorController.reset();
-                      _tabIndicatorController.forward();
+                      _pageController.animateToPage(
+                        index,
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeInOut,
+                      );
                     }
                   },
                   child: Container(
@@ -312,8 +315,15 @@ class _HomePageState extends ConsumerState<HomePage> with TickerProviderStateMix
       ),
       body: GestureDetector(
         onTap: _closeFabMenu,
-        child: IndexedStack(
-          index: _currentIndex,
+        child: PageView(
+          controller: _pageController,
+          onPageChanged: (index) {
+            setState(() {
+              _currentIndex = index;
+            });
+            _tabIndicatorController.reset();
+            _tabIndicatorController.forward();
+          },
           children: const [
             CardapiosTab(),
             ListasTab(),

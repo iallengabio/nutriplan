@@ -13,6 +13,7 @@ class AiApiServiceMock implements AiApiService {
     required Set<TipoRefeicao> tiposRefeicao,
     String? nome,
     String? observacoesAdicionais,
+    int? numberOfPeople,
   }) async {
     // Simula delay da API
     await Future.delayed(const Duration(seconds: 2));
@@ -23,6 +24,7 @@ class AiApiServiceMock implements AiApiService {
         tiposRefeicao: tiposRefeicao,
         nome: nome,
         observacoesAdicionais: observacoesAdicionais,
+        numberOfPeople: numberOfPeople,
       );
       return Success(menu);
     } catch (e) {
@@ -53,6 +55,7 @@ class AiApiServiceMock implements AiApiService {
     required int numeroSemanas,
     String? nome,
     String? observacoes,
+    int? numberOfPeople,
   }) async {
     // Simula delay da API
     await Future.delayed(const Duration(seconds: 2));
@@ -63,6 +66,7 @@ class AiApiServiceMock implements AiApiService {
         numeroSemanas: numeroSemanas,
         nome: nome,
         observacoes: observacoes,
+        numberOfPeople: numberOfPeople,
       );
       return Success(shoppingList);
     } catch (e) {
@@ -76,6 +80,7 @@ class AiApiServiceMock implements AiApiService {
     required Set<TipoRefeicao> tiposRefeicao,
     String? nome,
     String? observacoesAdicionais,
+    int? numberOfPeople,
   }) {
     final refeicoesPorDia = <DiaSemana, List<Refeicao>>{};
     
@@ -99,6 +104,7 @@ class AiApiServiceMock implements AiApiService {
       refeicoesPorDia: refeicoesPorDia,
       observacoes: _adicionarObservacoesPerfil(perfil, observacoesAdicionais),
       isFavorito: false,
+      numberOfPeople: numberOfPeople ?? (perfil.numeroAdultos + perfil.numeroCriancas),
     );
   }
 
@@ -226,32 +232,36 @@ class AiApiServiceMock implements AiApiService {
     required int numeroSemanas,
     String? nome,
     String? observacoes,
+    int? numberOfPeople,
   }) {
     final itens = <ShoppingItem>[];
     
-    // Ingredientes básicos que sempre aparecem
+    // Usa numberOfPeople do cardápio ou como fallback
+    final totalPessoas = numberOfPeople ?? menu.numberOfPeople ?? 4;
+    
+    // Ingredientes básicos que sempre aparecem (ajustados para o número de pessoas)
     final ingredientesBasicos = {
-      'Arroz integral': '${numeroSemanas}kg',
-      'Feijão': '${numeroSemanas * 500}g',
-      'Óleo de cozinha': '1 litro',
+      'Arroz integral': '${(numeroSemanas * totalPessoas * 0.5).toStringAsFixed(1)}kg',
+      'Feijão': '${(numeroSemanas * totalPessoas * 250).toInt()}g',
+      'Óleo de cozinha': '${totalPessoas > 4 ? 2 : 1} litro${totalPessoas > 4 ? 's' : ''}',
       'Sal': '1 pacote',
-      'Açúcar': '1kg',
-      'Leite': '${numeroSemanas * 2} litros',
-      'Ovos': '${numeroSemanas} dúzias',
-      'Pão integral': '${numeroSemanas * 2} unidades',
-      'Frango': '${numeroSemanas}kg',
-      'Carne bovina': '${numeroSemanas * 500}g',
-      'Peixe': '${numeroSemanas * 500}g',
-      'Batata': '${numeroSemanas}kg',
-      'Cebola': '${numeroSemanas * 500}g',
-      'Alho': '1 cabeça',
-      'Tomate': '${numeroSemanas * 500}g',
-      'Alface': '${numeroSemanas * 2} pés',
-      'Cenoura': '${numeroSemanas * 500}g',
-      'Brócolis': '${numeroSemanas * 2} unidades',
-      'Banana': '${numeroSemanas} dúzias',
-      'Maçã': '${numeroSemanas}kg',
-      'Iogurte natural': '${numeroSemanas * 4} unidades',
+      'Açúcar': '${totalPessoas > 4 ? 2 : 1}kg',
+      'Leite': '${(numeroSemanas * totalPessoas * 0.5).toInt()} litros',
+      'Ovos': '${(numeroSemanas * totalPessoas * 0.5).toInt()} dúzias',
+      'Pão integral': '${(numeroSemanas * totalPessoas * 0.5).toInt()} unidades',
+      'Frango': '${(numeroSemanas * totalPessoas * 0.5).toStringAsFixed(1)}kg',
+      'Carne bovina': '${(numeroSemanas * totalPessoas * 250).toInt()}g',
+      'Peixe': '${(numeroSemanas * totalPessoas * 250).toInt()}g',
+      'Batata': '${(numeroSemanas * totalPessoas * 0.5).toStringAsFixed(1)}kg',
+      'Cebola': '${(numeroSemanas * totalPessoas * 250).toInt()}g',
+      'Alho': '${totalPessoas > 4 ? 2 : 1} cabeça${totalPessoas > 4 ? 's' : ''}',
+      'Tomate': '${(numeroSemanas * totalPessoas * 250).toInt()}g',
+      'Alface': '${(numeroSemanas * totalPessoas * 0.5).toInt()} pés',
+      'Cenoura': '${(numeroSemanas * totalPessoas * 250).toInt()}g',
+      'Brócolis': '${(numeroSemanas * totalPessoas * 0.5).toInt()} unidades',
+      'Banana': '${(numeroSemanas * totalPessoas * 0.5).toInt()} dúzias',
+      'Maçã': '${(numeroSemanas * totalPessoas * 0.5).toStringAsFixed(1)}kg',
+      'Iogurte natural': '${(numeroSemanas * totalPessoas).toInt()} unidades',
     };
 
     // Categorias para organizar os itens

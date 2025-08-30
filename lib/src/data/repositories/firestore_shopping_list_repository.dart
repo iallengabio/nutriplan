@@ -56,6 +56,7 @@ class FirestoreShoppingListRepository implements ShoppingListRepository {
         numeroSemanas: numeroSemanas,
         nome: nome,
         observacoes: observacoes,
+        numberOfPeople: menu.numberOfPeople,
       );
 
       return await listaResult.fold(

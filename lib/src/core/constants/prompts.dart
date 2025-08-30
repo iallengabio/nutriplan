@@ -109,9 +109,14 @@ class ShoppingListPrompts {
     required List<Map<String, dynamic>> refeicoesPorDia,
     required int numeroSemanas,
     String? observacoes,
+    int? numberOfPeople,
   }) {
     final observacoesTexto = observacoes?.isNotEmpty == true
         ? '\n\nObservações adicionais: $observacoes'
+        : '';
+    
+    final pessoasTexto = numberOfPeople != null
+        ? '\n\n**Número de pessoas:** $numberOfPeople'
         : '';
     
     // Converter refeições para texto legível
@@ -124,11 +129,10 @@ class ShoppingListPrompts {
     }).join('\n');
     
     return '''
-Você é um especialista em planejamento de compras domésticas. Com base no cardápio fornecido, crie uma lista de compras otimizada para $numeroSemanas semana(s).
+Você é um especialista em planejamento de compras domésticas. Com base no cardápio fornecido, crie uma lista de compras otimizada para $numeroSemanas semana(s)${numberOfPeople != null ? ' para $numberOfPeople pessoas' : ''}.
 
 **Cardápio: $menuNome**
-$refeicoesList
-$observacoesTexto
+$refeicoesList$pessoasTexto$observacoesTexto
 
 **Instruções importantes:**
 1. Analise todas as refeições do cardápio e extraia TODOS os ingredientes necessários

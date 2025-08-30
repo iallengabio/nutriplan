@@ -405,6 +405,7 @@ class _CriarCardapioScreenState extends ConsumerState<CriarCardapioScreen> {
       observacoesAdicionais: _observacoesController.text.trim().isEmpty 
           ? null 
           : _observacoesController.text.trim(),
+      numberOfPeople: _numeroAdultos + _numeroCriancas,
     );
 
     // Se a geração foi bem-sucedida, navegar para a tela de edição

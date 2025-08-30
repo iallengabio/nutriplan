@@ -42,10 +42,11 @@ class GeminiAiService implements AiApiService {
     required Set<TipoRefeicao> tiposRefeicao,
     String? nome,
     String? observacoesAdicionais,
+    int? numberOfPeople,
   }) async {
     try {
       final prompt = MenuPrompts.gerarCardapioPrompt(
-        numeroPessoas: perfil.totalPessoas,
+        numeroPessoas: numberOfPeople ?? perfil.totalPessoas,
         restricoesAlimentares: perfil.restricoesAlimentares.map((r) => r.displayName).toList(),
         tiposRefeicao: tiposRefeicao.map((t) => t.displayName).toList(),
         observacoesAdicionais: observacoesAdicionais,
@@ -59,7 +60,11 @@ class GeminiAiService implements AiApiService {
         return Failure(AiApiServiceError('Resposta vazia da API do Gemini'));
       }
       
-      final menu = _parseMenuFromJson(response.text!, nome);
+      final menu = _parseMenuFromJson(
+        response.text!, 
+        nome, 
+        numberOfPeople: numberOfPeople ?? perfil.totalPessoas,
+      );
       return Success(menu);
       
     } on SocketException catch (e) {
@@ -117,6 +122,7 @@ class GeminiAiService implements AiApiService {
     required int numeroSemanas,
     String? nome,
     String? observacoes,
+    int? numberOfPeople,
   }) async {
     try {
       // Converte o menu para o formato esperado pelo prompt
@@ -135,6 +141,7 @@ class GeminiAiService implements AiApiService {
         refeicoesPorDia: refeicoesPorDia,
         numeroSemanas: numeroSemanas,
         observacoes: observacoes,
+        numberOfPeople: numberOfPeople ?? menu.numberOfPeople,
       );
       
       final response = await _model.generateContent([
@@ -166,7 +173,7 @@ class GeminiAiService implements AiApiService {
   }
   
   /// Converte a resposta JSON do Gemini em um objeto Menu
-  Menu _parseMenuFromJson(String jsonResponse, String? nomePersonalizado) {
+  Menu _parseMenuFromJson(String jsonResponse, String? nomePersonalizado, {int? numberOfPeople}) {
     try {
       // Remove possíveis marcadores de código do JSON
       String cleanJson = jsonResponse
@@ -208,6 +215,7 @@ class GeminiAiService implements AiApiService {
         dataCriacao: DateTime.now(),
         observacoes: observacoes,
         refeicoesPorDia: refeicoesPorDia,
+        numberOfPeople: numberOfPeople ?? 4,
       );
       
     } catch (e) {

@@ -30,6 +30,7 @@ mixin _$Menu {
   String? get observacoes => throw _privateConstructorUsedError;
   bool get isFavorito => throw _privateConstructorUsedError;
   DateTime? get dataUltimaEdicao => throw _privateConstructorUsedError;
+  int get numberOfPeople => throw _privateConstructorUsedError;
 
   /// Serializes this Menu to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -54,6 +55,7 @@ abstract class $MenuCopyWith<$Res> {
     String? observacoes,
     bool isFavorito,
     DateTime? dataUltimaEdicao,
+    int numberOfPeople,
   });
 }
 
@@ -79,6 +81,7 @@ class _$MenuCopyWithImpl<$Res, $Val extends Menu>
     Object? observacoes = freezed,
     Object? isFavorito = null,
     Object? dataUltimaEdicao = freezed,
+    Object? numberOfPeople = null,
   }) {
     return _then(
       _value.copyWith(
@@ -110,6 +113,10 @@ class _$MenuCopyWithImpl<$Res, $Val extends Menu>
                 ? _value.dataUltimaEdicao
                 : dataUltimaEdicao // ignore: cast_nullable_to_non_nullable
                       as DateTime?,
+            numberOfPeople: null == numberOfPeople
+                ? _value.numberOfPeople
+                : numberOfPeople // ignore: cast_nullable_to_non_nullable
+                      as int,
           )
           as $Val,
     );
@@ -133,6 +140,7 @@ abstract class _$$MenuImplCopyWith<$Res> implements $MenuCopyWith<$Res> {
     String? observacoes,
     bool isFavorito,
     DateTime? dataUltimaEdicao,
+    int numberOfPeople,
   });
 }
 
@@ -155,6 +163,7 @@ class __$$MenuImplCopyWithImpl<$Res>
     Object? observacoes = freezed,
     Object? isFavorito = null,
     Object? dataUltimaEdicao = freezed,
+    Object? numberOfPeople = null,
   }) {
     return _then(
       _$MenuImpl(
@@ -186,6 +195,10 @@ class __$$MenuImplCopyWithImpl<$Res>
             ? _value.dataUltimaEdicao
             : dataUltimaEdicao // ignore: cast_nullable_to_non_nullable
                   as DateTime?,
+        numberOfPeople: null == numberOfPeople
+            ? _value.numberOfPeople
+            : numberOfPeople // ignore: cast_nullable_to_non_nullable
+                  as int,
       ),
     );
   }
@@ -203,6 +216,7 @@ class _$MenuImpl implements _Menu {
     this.observacoes,
     this.isFavorito = false,
     this.dataUltimaEdicao,
+    this.numberOfPeople = 4,
   }) : _refeicoesPorDia = refeicoesPorDia;
 
   factory _$MenuImpl.fromJson(Map<String, dynamic> json) =>
@@ -230,10 +244,13 @@ class _$MenuImpl implements _Menu {
   final bool isFavorito;
   @override
   final DateTime? dataUltimaEdicao;
+  @override
+  @JsonKey()
+  final int numberOfPeople;
 
   @override
   String toString() {
-    return 'Menu(id: $id, nome: $nome, dataCriacao: $dataCriacao, refeicoesPorDia: $refeicoesPorDia, observacoes: $observacoes, isFavorito: $isFavorito, dataUltimaEdicao: $dataUltimaEdicao)';
+    return 'Menu(id: $id, nome: $nome, dataCriacao: $dataCriacao, refeicoesPorDia: $refeicoesPorDia, observacoes: $observacoes, isFavorito: $isFavorito, dataUltimaEdicao: $dataUltimaEdicao, numberOfPeople: $numberOfPeople)';
   }
 
   @override
@@ -254,7 +271,9 @@ class _$MenuImpl implements _Menu {
             (identical(other.isFavorito, isFavorito) ||
                 other.isFavorito == isFavorito) &&
             (identical(other.dataUltimaEdicao, dataUltimaEdicao) ||
-                other.dataUltimaEdicao == dataUltimaEdicao));
+                other.dataUltimaEdicao == dataUltimaEdicao) &&
+            (identical(other.numberOfPeople, numberOfPeople) ||
+                other.numberOfPeople == numberOfPeople));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -268,6 +287,7 @@ class _$MenuImpl implements _Menu {
     observacoes,
     isFavorito,
     dataUltimaEdicao,
+    numberOfPeople,
   );
 
   /// Create a copy of Menu
@@ -294,6 +314,7 @@ abstract class _Menu implements Menu {
     final String? observacoes,
     final bool isFavorito,
     final DateTime? dataUltimaEdicao,
+    final int numberOfPeople,
   }) = _$MenuImpl;
 
   factory _Menu.fromJson(Map<String, dynamic> json) = _$MenuImpl.fromJson;
@@ -313,6 +334,8 @@ abstract class _Menu implements Menu {
   bool get isFavorito;
   @override
   DateTime? get dataUltimaEdicao;
+  @override
+  int get numberOfPeople;
 
   /// Create a copy of Menu
   /// with the given fields replaced by the non-null parameter values.

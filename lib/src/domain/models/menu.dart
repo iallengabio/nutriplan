@@ -15,6 +15,7 @@ class Menu with _$Menu {
     String? observacoes,
     @Default(false) bool isFavorito,
     DateTime? dataUltimaEdicao,
+    @Default(4) int numberOfPeople,
   }) = _Menu;
 
   factory Menu.fromJson(Map<String, dynamic> json) => _$MenuFromJson(json);

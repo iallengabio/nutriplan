@@ -36,6 +36,7 @@ class FirestoreMenuRepository implements MenuRepository {
     required Set<TipoRefeicao> tiposRefeicao,
     String? nome,
     String? observacoesAdicionais,
+    int? numberOfPeople,
   }) async {
     try {
       if (_currentUserId == null) {
@@ -59,6 +60,7 @@ class FirestoreMenuRepository implements MenuRepository {
         tiposRefeicao: tiposRefeicao,
         nome: nome,
         observacoesAdicionais: observacoesAdicionais,
+        numberOfPeople: numberOfPeople,
       );
 
       return await menuResult.fold(
