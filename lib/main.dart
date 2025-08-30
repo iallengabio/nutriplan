@@ -100,7 +100,7 @@ class MyApp extends ConsumerWidget {
     // Determina o tema baseado nas configurações
     ThemeMode themeMode = ThemeMode.system;
     if (settingsViewModel is SettingsLoaded) {
-      final settings = (settingsViewModel as SettingsLoaded).settings;
+      final settings = (settingsViewModel).settings;
       switch (settings.themeMode) {
         case settings_model.ThemeMode.light:
           themeMode = ThemeMode.light;

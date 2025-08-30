@@ -197,8 +197,8 @@ class _PerfilTabState extends ConsumerState<PerfilTab> {
   void _salvarPerfil() {
     if (_formKey.currentState!.validate()) {
       // TODO: Implementar salvamento do perfil familiar
-      final adultos = int.parse(_adultosController.text);
-      final criancas = int.parse(_criancasController.text);
+      int.parse(_adultosController.text);
+      int.parse(_criancasController.text);
       
       final restricoes = <String>[];
       if (_restricaoGluten) restricoes.add('Glúten');

@@ -48,10 +48,10 @@ O aplicativo contempla:
 - **RF1.5**: Dados de autenticação devem ser armazenados de forma segura (ex.: Firebase Auth).
 
 ### 2.2 Perfil Familiar
-- **RF2.1**: O usuário deve informar:  
+- **RF2.1**: O usuário deve informar **a cada geração de cardápio**:  
   - Quantidade total de pessoas.  
   - Separação entre adultos e crianças (faixas etárias).  
-- **RF2.2**: O usuário pode cadastrar **restrições alimentares fixas**. Lista de opções:  
+- **RF2.2**: O usuário pode selecionar **restrições alimentares** durante a criação do cardápio. Lista de opções:  
   - Glúten  
   - Lactose  
   - Açúcar  
@@ -62,7 +62,7 @@ O aplicativo contempla:
   - Ferro (ex.: restrição para pacientes com hemocromatose)  
   - Sal/sódio  
 - **RF2.3**: O usuário pode inserir **observações adicionais** para cardápios (em cada geração).  
-- **RF2.4**: Os dados devem ser **armazenados localmente** e **editáveis a qualquer momento**.
+- **RF2.4**: O perfil familiar é configurado **individualmente para cada cardápio**, permitindo flexibilidade para diferentes necessidades familiares ao longo do tempo.
 
 ### 2.3 Cardápios
 - **RF3.1**: O app deve gerar um **cardápio semanal** usando IA, com base no perfil familiar.  
@@ -72,14 +72,14 @@ O aplicativo contempla:
   - Sugestões nutricionais.  
 - **RF3.3**: O usuário pode **trocar refeições específicas** (gerando alternativas com IA).  
 - **RF3.4**: O usuário pode **excluir refeições** individualmente.  
-- **RF3.5**: O cardápio aprovado deve ser **salvo localmente para acesso offline**.  
+- **RF3.5**: O cardápio aprovado deve ser **salvo no Firebase Firestore** com separação por usuário.  
 - **RF3.6**: O app deve tratar **erros da IA** (ex.: retry automático ou fallback manual).
 
 ### 2.4 Lista de Compras
 - **RF4.1**: O usuário pode gerar uma **lista de compras** baseada em um cardápio selecionado.  
 - **RF4.2**: A lista deve considerar:  
   - Número de semanas especificado pelo usuário.  
-- **RF4.3**: A lista deve ser **armazenada localmente** com data de criação.  
+- **RF4.3**: A lista deve ser **armazenada no Firebase Firestore** com data de criação e separação por usuário.  
 - **RF4.4**: O usuário pode **marcar itens como comprados** (checkbox).  
 - **RF4.5**: O usuário pode **editar manualmente a lista** (adicionar/remover itens).  
 - **RF4.6**: Deve haver suporte para **múltiplas listas salvas**.  
@@ -106,7 +106,8 @@ O aplicativo contempla:
 
 ### 3.1 Desempenho
 - **RNF1.1**: Tempo máximo de resposta da IA: **10 segundos**.  
-- **RNF1.2**: O app deve funcionar **offline** para dados salvos.  
+- **RNF1.2**: O app deve sincronizar dados com o **Firebase Firestore** em tempo real.  
+- **RNF1.3**: O app deve ter **cache local** para melhor performance e funcionalidade offline básica.  
 
 ### 3.2 Usabilidade
 - **RNF2.1**: Interface intuitiva, responsiva (iOS/Android).  
@@ -115,13 +116,15 @@ O aplicativo contempla:
 - **RNF2.4**: Mensagens de erro claras e tutoriais iniciais.  
 
 ### 3.3 Segurança
-- **RNF3.1**: Dados sensíveis devem ser **criptografados** localmente.  
+- **RNF3.1**: Dados devem ser **protegidos por regras de segurança do Firestore** garantindo acesso apenas ao usuário proprietário.  
 - **RNF3.2**: Chamadas à IA não devem enviar dados pessoais desnecessários.  
 - **RNF3.3**: Conformidade com **LGPD/GDPR**.  
+- **RNF3.4**: Autenticação obrigatória para acesso aos dados no Firestore.  
 
 ### 3.4 Confiabilidade
-- **RNF4.1**: O app deve lidar com falhas de rede, salvando **rascunhos**.  
-- **RNF4.2**: Deve haver **backup automático** de listas.  
+- **RNF4.1**: O app deve lidar com falhas de rede, mantendo **sincronização automática** quando a conexão for restabelecida.  
+- **RNF4.2**: O **Firebase Firestore** garante backup automático e redundância dos dados.  
+- **RNF4.3**: Implementar **retry automático** para operações que falharam por problemas de conectividade.  
 
 ### 3.5 Manutenibilidade
 - **RNF5.1**: Código modular em Flutter (separação UI, lógica e IA).  
@@ -133,15 +136,15 @@ O aplicativo contempla:
 
 ### 4.1 Gerar Cardápio
 - **Ator**: Usuário logado.  
-- **Pré-condição**: Perfil configurado.  
-- **Fluxo**: Configurar → Gerar via IA → Ir para edição → Editar → Salvar.  
-- **Pós-condição**: Cardápio armazenado localmente.  
+- **Pré-condição**: Nenhuma (perfil é configurado durante a criação).  
+- **Fluxo**: Configurar perfil familiar → Selecionar tipos de refeição → Gerar via IA → Navegar automaticamente para edição → Editar → Salvar.  
+- **Pós-condição**: Cardápio armazenado no Firebase Firestore.  
 
 ### 4.2 Gerar Lista de Compras
 - **Ator**: Usuário logado.  
 - **Pré-condição**: Cardápio aprovado.  
 - **Fluxo**: Selecionar cardápio → Definir semanas → Criar lista → Ir para edição → Editar/Compartilhar.  
-- **Pós-condição**: Lista armazenada localmente.  
+- **Pós-condição**: Lista armazenada no Firebase Firestore.  
 
 ---
 
@@ -152,11 +155,10 @@ O aplicativo contempla:
 - Ações: Entrar, Criar conta, Recuperar senha, Login via Google/Apple.  
 
 ### 5.2 Tela Principal (com abas)
-- Estrutura de navegação similar ao WhatsApp.  
+- Estrutura de navegação simplificada.  
 - Abas:  
   - **Gerenciar Cardápios** (5.2.1)  
   - **Gerenciar Listas de Compras** (5.2.2)  
-  - **Editar Perfil Familiar** (5.2.3)  
 
 #### 5.2.1 Aba: Gerenciar Cardápios
 - Lista de cardápios criados (com data).  
@@ -169,15 +171,13 @@ O aplicativo contempla:
 - Botão para criar nova lista → abre **Tela 5.6**.  
 - Ações em cada lista: Editar (Tela 5.7), Duplicar, Excluir.  
 
-#### 5.2.3 Aba: Editar Perfil Familiar
-- Campos: número de adultos, número de crianças (com faixas etárias).  
-- Restrições alimentares (checkboxes fixos: glúten, lactose, açúcar, carne vermelha, frango, peixe, ovos, ferro, sódio).  
-- Botão salvar alterações.  
-
 ### 5.4 Tela Criar Cardápio
+- **Configuração do Perfil Familiar:**
+  - Campos: número de adultos, número de crianças.
+  - Restrições alimentares (checkboxes: glúten, lactose, açúcar, carne vermelha, frango, peixe, ovos, ferro, sódio).
 - Checkboxes para tipos de refeição (café da manhã, almoço, lanche, jantar, ceia).  
 - Campo de observações adicionais.  
-- Botão “Gerar cardápio” → leva direto à **Tela 5.5** (Editar cardápio).  
+- Botão "Gerar cardápio" → leva direto à **Tela 5.5** (Editar cardápio) com o cardápio recém-gerado.  
 
 ### 5.5 Tela Editar Cardápio
 - Exibição de refeições organizadas por dias da semana.  
@@ -197,7 +197,8 @@ O aplicativo contempla:
 ---
 
 ## 6. Considerações Técnicas
-- **Tecnologias**: Flutter, Dart, HTTP, Shared preferences, Firebase Auth.  
+- **Tecnologias**: Flutter, Dart, HTTP, Firebase Firestore, Firebase Auth.  
 - **IA**: OpenAI, Gemini ou similar.  
-- **Testes**: Unitários (lógica), integração (API), beta com usuários.  
-- **Próximos Passos**: Diagramas de arquitetura, wireframes e planejamento de sprints.  
+- **Banco de Dados**: Firebase Firestore com estrutura de coleções por usuário (`users/{userId}/menus`, `users/{userId}/shopping_lists`).  
+- **Testes**: Unitários (lógica), integração (API e Firestore), beta com usuários.  
+- **Próximos Passos**: Configuração das regras de segurança do Firestore, implementação dos repositórios e testes de sincronização.

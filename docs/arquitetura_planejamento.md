@@ -36,7 +36,8 @@ Documento com a especificação de arquitetura, padrões de projeto, principais 
 ## 3. Principais packages recomendados
 - `flutter_riverpod` — estado e DI.
 - `result_dart` — encapsula sucesso/erro em um único tipo.
-- `shared_preferences` — armazenamento local simples e performático.
+- `cloud_firestore` — banco de dados NoSQL em tempo real do Firebase.
+- `firebase_core` — configuração base do Firebase.
 - `http` ou `dio` — chamadas HTTP (use `dio` se quiser interceptors/log).  
 - `firebase_auth`, `google_sign_in`, `sign_in_with_apple` — autenticação.  
 - `intl` — formatação de datas/números.  
@@ -70,16 +71,16 @@ lib/
       utils/              # Utilitários gerais
     data/
       datasources/
-        local/            # Fontes de dados locais
-          hive_manager.dart
+        local/            # Fontes de dados locais (cache/offline)
           secure_storage.dart
         remote/           # Fontes de dados remotos
           http_client.dart
           ai_api_client.dart
+          firestore_client.dart
       repositories/       # Implementações concretas dos repositórios
         auth_repository_impl.dart
-        menu_repository_impl.dart
-        shopping_repository_impl.dart
+        firestore_menu_repository.dart
+        firestore_shopping_repository.dart
     domain/
       models/             # Entidades e modelos de domínio (freezed/json)
         user.dart
@@ -176,6 +177,10 @@ final httpClientProvider = Provider<HttpClient>((ref) {
   return HttpClient(); // configurações, interceptors
 });
 
+final firestoreProvider = Provider<FirebaseFirestore>((ref) {
+  return FirebaseFirestore.instance;
+});
+
 final aiApiServiceProvider = Provider<AiApiService>((ref) {
   final client = ref.read(httpClientProvider);
   final apiKey = ref.watch(configProvider).aiKey;
@@ -186,8 +191,9 @@ final aiApiServiceProvider = Provider<AiApiService>((ref) {
 ```dart
 final menuRepositoryProvider = Provider<MenuRepository>((ref) {
   final ai = ref.read(aiApiServiceProvider);
-  final local = ref.read(hiveBoxProvider);
-  return MenuRepositoryImpl(ai, local);
+  final firestore = ref.read(firestoreProvider);
+  final auth = ref.read(authProvider);
+  return FirestoreMenuRepository(ai, firestore, auth);
 });
 ```
 - **ViewModels**:
@@ -233,14 +239,14 @@ final menuViewModelProvider = StateNotifierProvider<MenuViewModel, AsyncValue<Me
 1. Usuário abre **Tela Criar Cardápio** e marca refeições + escreve observações.  
 2. Usuário clica **Gerar Cardápio**. Tela aciona `menuViewModel.gerarNovoCardapio(perfil, opcoes)`.  
 3. `MenuViewModel` altera estado para `loading` e chama `MenuRepository.gerarMenu(perfil)`.  
-4. `MenuRepositoryImpl` constrói prompt e chama `AiApiService.gerarCardapio(prompt)`.  
+4. `FirestoreMenuRepository` constrói prompt e chama `AiApiService.gerarCardapio(prompt)`.  
 5. `AiApiService` faz requisição HTTP ao endpoint da IA e retorna JSON com cardápio.  
-6. `MenuRepositoryImpl` converte JSON em `Menu` (Mapper) e persiste em Hive (`hiveBox.put(menu.id, menu)`) e retorna o menu.  
+6. `FirestoreMenuRepository` converte JSON em `Menu` (Mapper) e persiste no Firestore na coleção do usuário (`users/{userId}/menus/{menuId}`) e retorna o menu.  
 7. `MenuViewModel` atualiza estado para `data(menu)`; a View reage e navega para **Tela Editar Cardápio**.  
-8. Usuário revisa e salva; ao confirmar, o menu já está gravado localmente.  
+8. Usuário revisa e salva; ao confirmar, o menu é atualizado no Firestore.  
 9. Na aba **Gerenciar Listas**, usuário cria nova lista selecionando o menu e informando número de semanas.  
 10. `ShoppingViewModel` chama `ShoppingRepository.gerarLista(menu, semanas)` que chama `AiApiService.gerarListaDeCompras(menu, semanas)`.  
-11. Lista é recebida, mapeada, salva em Hive e a UI abre **Tela Editar Lista** com os itens.  
+11. Lista é recebida, mapeada, salva no Firestore (`users/{userId}/shopping_lists/{listId}`) e a UI abre **Tela Editar Lista** com os itens.  
 
 ---
 

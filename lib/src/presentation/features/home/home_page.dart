@@ -3,8 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'home_viewmodel.dart';
 import 'cardapios/cardapios_tab.dart';
+import 'cardapios/criar_cardapio_screen.dart';
 import 'listas/listas_tab.dart';
-import 'perfil/perfil_tab.dart';
+
 import '../settings/settings_page.dart';
 
 class HomePage extends ConsumerStatefulWidget {
@@ -184,7 +185,6 @@ class _HomePageState extends ConsumerState<HomePage> with TickerProviderStateMix
     const tabItems = [
       {'icon': Icons.restaurant_menu, 'label': 'Cardápios'},
       {'icon': Icons.shopping_cart, 'label': 'Listas'},
-      {'icon': Icons.people, 'label': 'Perfil'},
     ];
 
     const double barHeight = 85;
@@ -211,8 +211,8 @@ class _HomePageState extends ConsumerState<HomePage> with TickerProviderStateMix
               return AnimatedPositioned(
                 duration: const Duration(milliseconds: 300),
                 curve: Curves.easeInOutCubic,
-                left: (_currentIndex * (MediaQuery.of(context).size.width / 3)) + 
-                       (MediaQuery.of(context).size.width / 6) - 25,
+                left: (_currentIndex * (MediaQuery.of(context).size.width / 2)) + 
+                       (MediaQuery.of(context).size.width / 4) - 25,
                  top: (barHeight / 2) - (indicatorHeight / 2) - 8, // Alinha com o centro dos ícones
                 child: Transform.scale(
                   scale: 0.8 + (0.2 * _tabIndicatorAnimation.value),
@@ -315,7 +315,6 @@ class _HomePageState extends ConsumerState<HomePage> with TickerProviderStateMix
           children: const [
             CardapiosTab(),
             ListasTab(),
-            PerfilTab(),
           ],
         ),
       ),
@@ -335,41 +334,9 @@ class _HomePageState extends ConsumerState<HomePage> with TickerProviderStateMix
 
 
   void _showNovoCardapioDialog(HomeViewModel homeViewModel) {
-    final controller = TextEditingController();
-    
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Novo Cardápio'),
-        content: TextField(
-          controller: controller,
-          decoration: const InputDecoration(
-            labelText: 'Nome do cardápio',
-            hintText: 'Ex: Cardápio da Semana',
-          ),
-          autofocus: true,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancelar'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              if (controller.text.trim().isNotEmpty) {
-                homeViewModel.adicionarCardapio(controller.text.trim());
-                Navigator.of(context).pop();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Cardápio "${controller.text.trim()}" criado!'),
-                    backgroundColor: Theme.of(context).colorScheme.primary,
-                  ),
-                );
-              }
-            },
-            child: const Text('Criar'),
-          ),
-        ],
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => const CriarCardapioScreen(),
       ),
     );
   }

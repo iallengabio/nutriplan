@@ -1,0 +1,336 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../domain/models/menu.dart';
+import '../../../../domain/models/perfil_familiar.dart';
+import '../../../../domain/models/refeicao.dart';
+import '../../../../domain/repositories/menu_repository.dart';
+
+// Estado do Menu
+class MenuState {
+  final List<Menu> menus;
+  final bool isLoading;
+  final String? errorMessage;
+  final Menu? menuSelecionado;
+  final bool isGeneratingMenu;
+  final bool isSaving;
+
+  const MenuState({
+    this.menus = const [],
+    this.isLoading = false,
+    this.errorMessage,
+    this.menuSelecionado,
+    this.isGeneratingMenu = false,
+    this.isSaving = false,
+  });
+
+  MenuState copyWith({
+    List<Menu>? menus,
+    bool? isLoading,
+    String? errorMessage,
+    Menu? menuSelecionado,
+    bool? isGeneratingMenu,
+    bool? isSaving,
+    bool clearError = false,
+    bool clearMenuSelecionado = false,
+  }) {
+    return MenuState(
+      menus: menus ?? this.menus,
+      isLoading: isLoading ?? this.isLoading,
+      errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
+      menuSelecionado: clearMenuSelecionado ? null : (menuSelecionado ?? this.menuSelecionado),
+      isGeneratingMenu: isGeneratingMenu ?? this.isGeneratingMenu,
+      isSaving: isSaving ?? this.isSaving,
+    );
+  }
+}
+
+// ViewModel do Menu
+class MenuViewModel extends StateNotifier<MenuState> {
+  final MenuRepository _menuRepository;
+
+  MenuViewModel(this._menuRepository) : super(const MenuState());
+
+  /// Carrega todos os cardápios salvos
+  Future<void> carregarMenus() async {
+    state = state.copyWith(isLoading: true, clearError: true);
+
+    final result = await _menuRepository.listarMenus();
+    
+    result.fold(
+      (menus) {
+        state = state.copyWith(
+          menus: menus,
+          isLoading: false,
+        );
+      },
+      (error) {
+        state = state.copyWith(
+          isLoading: false,
+          errorMessage: 'Erro ao carregar cardápios: ${error.toString()}',
+        );
+      },
+    );
+  }
+
+  /// Gera um novo cardápio baseado no perfil familiar
+  Future<void> gerarMenu({
+    required PerfilFamiliar perfil,
+    required Set<TipoRefeicao> tiposRefeicao,
+    String? nome,
+    String? observacoesAdicionais,
+  }) async {
+    state = state.copyWith(isGeneratingMenu: true, clearError: true);
+
+    final result = await _menuRepository.gerarMenu(
+      perfil: perfil,
+      tiposRefeicao: tiposRefeicao,
+      nome: nome,
+      observacoesAdicionais: observacoesAdicionais,
+    );
+
+    await result.fold(
+      (menu) async {
+        // Salva automaticamente o cardápio gerado usando ID gerado pelo Firebase
+        final saveResult = await _menuRepository.salvarNovoMenu(menu);
+        
+        await saveResult.fold(
+          (menuSalvo) {
+            // Atualiza a lista de menus com o novo cardápio salvo (com ID do Firebase)
+            final menusAtualizados = List<Menu>.from(state.menus);
+            menusAtualizados.insert(0, menuSalvo); // Adiciona no início
+            
+            state = state.copyWith(
+              isGeneratingMenu: false,
+              menuSelecionado: menuSalvo,
+              menus: menusAtualizados,
+            );
+          },
+          (saveError) {
+            // Se falhar ao salvar, ainda mantém o menu selecionado mas mostra erro
+            state = state.copyWith(
+              isGeneratingMenu: false,
+              menuSelecionado: menu,
+              errorMessage: 'Cardápio gerado mas não foi possível salvar: ${saveError.toString()}',
+            );
+          },
+        );
+      },
+      (error) {
+        state = state.copyWith(
+          isGeneratingMenu: false,
+          errorMessage: 'Erro ao gerar cardápio: ${error.toString()}',
+        );
+      },
+    );
+  }
+
+  /// Salva um cardápio
+  Future<void> salvarMenu(Menu menu) async {
+    state = state.copyWith(isSaving: true, clearError: true);
+
+    final result = await _menuRepository.salvarMenu(menu);
+
+    result.fold(
+      (_) {
+        // Atualiza a lista de menus
+        final menusAtualizados = List<Menu>.from(state.menus);
+        final index = menusAtualizados.indexWhere((m) => m.id == menu.id);
+        
+        if (index >= 0) {
+          menusAtualizados[index] = menu;
+        } else {
+          menusAtualizados.insert(0, menu); // Adiciona no início
+        }
+
+        state = state.copyWith(
+          menus: menusAtualizados,
+          isSaving: false,
+        );
+      },
+      (error) {
+        state = state.copyWith(
+          isSaving: false,
+          errorMessage: 'Erro ao salvar cardápio: ${error.toString()}',
+        );
+      },
+    );
+  }
+
+  /// Busca um cardápio por ID
+  Future<void> buscarMenuPorId(String id) async {
+    state = state.copyWith(isLoading: true, clearError: true);
+
+    final result = await _menuRepository.buscarMenuPorId(id);
+
+    result.fold(
+      (menu) {
+        state = state.copyWith(
+          isLoading: false,
+          menuSelecionado: menu,
+        );
+      },
+      (error) {
+        state = state.copyWith(
+          isLoading: false,
+          errorMessage: 'Cardápio não encontrado',
+        );
+      },
+    );
+  }
+
+  /// Atualiza um cardápio existente
+  Future<void> atualizarMenu(Menu menu) async {
+    state = state.copyWith(isSaving: true, clearError: true);
+
+    final result = await _menuRepository.atualizarMenu(menu);
+
+    result.fold(
+      (_) {
+        // Atualiza a lista de menus
+        final menusAtualizados = List<Menu>.from(state.menus);
+        final index = menusAtualizados.indexWhere((m) => m.id == menu.id);
+        
+        if (index >= 0) {
+          menusAtualizados[index] = menu;
+        }
+
+        state = state.copyWith(
+          menus: menusAtualizados,
+          menuSelecionado: menu,
+          isSaving: false,
+        );
+      },
+      (error) {
+        state = state.copyWith(
+          isSaving: false,
+          errorMessage: 'Erro ao atualizar cardápio: ${error.toString()}',
+        );
+      },
+    );
+  }
+
+  /// Remove um cardápio
+  Future<void> removerMenu(String id) async {
+    state = state.copyWith(isLoading: true, clearError: true);
+
+    final result = await _menuRepository.removerMenu(id);
+
+    result.fold(
+      (_) {
+        final menusAtualizados = state.menus.where((m) => m.id != id).toList();
+        
+        state = state.copyWith(
+          menus: menusAtualizados,
+          isLoading: false,
+        );
+      },
+      (error) {
+        state = state.copyWith(
+          isLoading: false,
+          errorMessage: 'Erro ao remover cardápio: ${error.toString()}',
+        );
+      },
+    );
+  }
+
+  /// Duplica um cardápio
+  Future<void> duplicarMenu(String menuId) async {
+    state = state.copyWith(isLoading: true, clearError: true);
+
+    final result = await _menuRepository.duplicarMenu(menuId);
+
+    result.fold(
+      (menuDuplicado) {
+        final menusAtualizados = List<Menu>.from(state.menus);
+        menusAtualizados.insert(0, menuDuplicado); // Adiciona no início
+
+        state = state.copyWith(
+          menus: menusAtualizados,
+          isLoading: false,
+        );
+      },
+      (error) {
+        state = state.copyWith(
+          isLoading: false,
+          errorMessage: 'Erro ao duplicar cardápio: ${error.toString()}',
+        );
+      },
+    );
+  }
+
+  /// Gera uma refeição alternativa
+  Future<void> gerarRefeicaoAlternativa({
+    required PerfilFamiliar perfil,
+    required TipoRefeicao tipo,
+    String? observacoesAdicionais,
+  }) async {
+    state = state.copyWith(isLoading: true, clearError: true);
+
+    final result = await _menuRepository.gerarRefeicaoAlternativa(
+      perfil: perfil,
+      tipo: tipo,
+      observacoesAdicionais: observacoesAdicionais,
+    );
+
+    result.fold(
+      (refeicao) {
+        state = state.copyWith(isLoading: false);
+        // A refeição alternativa será tratada pela tela que chamou este método
+      },
+      (error) {
+        state = state.copyWith(
+          isLoading: false,
+          errorMessage: 'Erro ao gerar refeição alternativa: ${error.toString()}',
+        );
+      },
+    );
+  }
+
+  /// Marca/desmarca um cardápio como favorito
+  Future<void> toggleFavorito(String menuId) async {
+    final menu = state.menus.firstWhere((m) => m.id == menuId);
+    final menuAtualizado = menu.copyWith(isFavorito: !menu.isFavorito);
+    
+    await atualizarMenu(menuAtualizado);
+  }
+
+  /// Seleciona um menu para edição
+  void selecionarMenu(Menu menu) {
+    state = state.copyWith(menuSelecionado: menu);
+  }
+
+  /// Limpa o menu selecionado
+  void limparMenuSelecionado() {
+    state = state.copyWith(clearMenuSelecionado: true);
+  }
+
+  /// Limpa mensagens de erro
+  void limparErro() {
+    state = state.copyWith(clearError: true);
+  }
+
+  /// Atualiza uma refeição específica no menu selecionado
+  void atualizarRefeicaoNoMenu({
+    required DiaSemana dia,
+    required int indiceRefeicao,
+    required Refeicao novaRefeicao,
+  }) {
+    if (state.menuSelecionado == null) return;
+
+    final menu = state.menuSelecionado!;
+    final refeicoesDoDia = List<Refeicao>.from(menu.refeicoesPorDia[dia] ?? []);
+    
+    if (indiceRefeicao < refeicoesDoDia.length) {
+      refeicoesDoDia[indiceRefeicao] = novaRefeicao;
+      
+      final novoRefeicoesPorDia = Map<DiaSemana, List<Refeicao>>.from(menu.refeicoesPorDia);
+      novoRefeicoesPorDia[dia] = refeicoesDoDia;
+      
+      final menuAtualizado = menu.copyWith(
+        refeicoesPorDia: novoRefeicoesPorDia,
+        dataUltimaEdicao: DateTime.now(),
+      );
+      
+      state = state.copyWith(menuSelecionado: menuAtualizado);
+    }
+  }
+}
