@@ -5,6 +5,8 @@ import 'home_viewmodel.dart';
 import 'cardapios/cardapios_tab.dart';
 import 'cardapios/criar_cardapio_screen.dart';
 import 'listas/listas_tab.dart';
+import 'listas/create_shopping_list_page.dart';
+import '../shopping/pages/create_shopping_list_from_menu_page.dart';
 
 import '../settings/settings_page.dart';
 
@@ -344,39 +346,33 @@ class _HomePageState extends ConsumerState<HomePage> with TickerProviderStateMix
 
 
   void _showNovaListaDialog(HomeViewModel homeViewModel) {
-    final controller = TextEditingController();
-    
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Nova Lista de Compras'),
-        content: TextField(
-          controller: controller,
-          decoration: const InputDecoration(
-            labelText: 'Nome da lista',
-            hintText: 'Ex: Lista da Semana',
-          ),
-          autofocus: true,
-        ),
+        content: const Text('Como você gostaria de criar a lista?'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancelar'),
-          ),
-          ElevatedButton(
             onPressed: () {
-              if (controller.text.trim().isNotEmpty) {
-                homeViewModel.adicionarLista(controller.text.trim());
-                Navigator.of(context).pop();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Lista "${controller.text.trim()}" criada!'),
-                    backgroundColor: Theme.of(context).colorScheme.primary,
-                  ),
-                );
-              }
+              Navigator.of(context).pop();
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const CreateShoppingListFromMenuPage(),
+                ),
+              );
             },
-            child: const Text('Criar'),
+            child: const Text('Baseada em Cardápio'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const CreateShoppingListPage(),
+                ),
+              );
+            },
+            child: const Text('Lista Manual'),
           ),
         ],
       ),

@@ -2,7 +2,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../domain/models/menu.dart';
 import '../../../../domain/models/perfil_familiar.dart';
 import '../../../../domain/models/refeicao.dart';
+import '../../../../domain/models/shopping_list.dart';
 import '../../../../domain/repositories/menu_repository.dart';
+import '../../../../domain/repositories/shopping_list_repository.dart';
 
 // Estado do Menu
 class MenuState {
@@ -51,8 +53,12 @@ class MenuState {
 // ViewModel do Menu
 class MenuViewModel extends StateNotifier<MenuState> {
   final MenuRepository _menuRepository;
+  final ShoppingListRepository _shoppingListRepository;
 
-  MenuViewModel(this._menuRepository) : super(const MenuState());
+  MenuViewModel(
+    this._menuRepository,
+    this._shoppingListRepository,
+  ) : super(const MenuState());
 
   /// Carrega todos os cardápios salvos
   Future<void> carregarMenus() async {
@@ -344,5 +350,83 @@ class MenuViewModel extends StateNotifier<MenuState> {
       
       state = state.copyWith(menuSelecionado: menuAtualizado);
     }
+  }
+
+  /// Gera uma lista de compras baseada em um cardápio
+  Future<ShoppingList?> gerarListaComprasDoMenu({
+    required String menuId,
+    required int numeroSemanas,
+    String? nomePersonalizado,
+    String? observacoes,
+  }) async {
+    try {
+      // Busca o menu pelo ID
+      final menuResult = await _menuRepository.buscarMenuPorId(menuId);
+      
+      return await menuResult.fold(
+        (menu) async {
+          // Gera a lista de compras baseada no menu
+          final listaResult = await _shoppingListRepository.gerarListaCompras(
+            menu: menu,
+            numeroSemanas: numeroSemanas,
+            nome: nomePersonalizado,
+            observacoes: observacoes,
+          );
+          
+          return listaResult.fold(
+            (lista) => lista,
+            (error) {
+              state = state.copyWith(
+                errorMessage: 'Erro ao gerar lista de compras: ${error.toString()}',
+              );
+              return null;
+            },
+          );
+        },
+        (error) {
+          state = state.copyWith(
+            errorMessage: 'Erro ao buscar cardápio: ${error.toString()}',
+          );
+          return null;
+        },
+      );
+    } catch (e) {
+      state = state.copyWith(
+        errorMessage: 'Erro inesperado ao gerar lista de compras: $e',
+      );
+      return null;
+    }
+  }
+
+  /// Gera e salva uma lista de compras baseada em um cardápio
+  Future<ShoppingList?> gerarESalvarListaCompras({
+    required String menuId,
+    required int numeroSemanas,
+    String? nomePersonalizado,
+    String? observacoes,
+  }) async {
+    final lista = await gerarListaComprasDoMenu(
+      menuId: menuId,
+      numeroSemanas: numeroSemanas,
+      nomePersonalizado: nomePersonalizado,
+      observacoes: observacoes,
+    );
+    
+    if (lista != null) {
+      // Salva a lista gerada
+      final saveResult = await _shoppingListRepository.salvarNovaListaCompras(lista);
+      
+      return saveResult.fold(
+        (listaSalva) => listaSalva,
+        (error) {
+          state = state.copyWith(
+            errorMessage: 'Erro ao salvar lista de compras: ${error.toString()}',
+          );
+          return null;
+        },
+      );
+    }
+    
+    return null;
   }
 }

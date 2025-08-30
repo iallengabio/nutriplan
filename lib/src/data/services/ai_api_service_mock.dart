@@ -2,6 +2,7 @@ import 'package:result_dart/result_dart.dart';
 import '../../domain/models/menu.dart';
 import '../../domain/models/perfil_familiar.dart';
 import '../../domain/models/refeicao.dart';
+import '../../domain/models/shopping_list.dart';
 import '../../domain/services/ai_api_service.dart';
 
 /// Implementação mock do AiApiService para desenvolvimento
@@ -43,6 +44,29 @@ class AiApiServiceMock implements AiApiService {
       return Success(refeicao);
     } catch (e) {
       return Failure(AiApiServiceError('Erro ao gerar refeição alternativa: $e'));
+    }
+  }
+
+  @override
+  Future<Result<ShoppingList>> gerarListaCompras({
+    required Menu menu,
+    required int numeroSemanas,
+    String? nome,
+    String? observacoes,
+  }) async {
+    // Simula delay da API
+    await Future.delayed(const Duration(seconds: 2));
+
+    try {
+      final shoppingList = _criarListaComprasMock(
+        menu: menu,
+        numeroSemanas: numeroSemanas,
+        nome: nome,
+        observacoes: observacoes,
+      );
+      return Success(shoppingList);
+    } catch (e) {
+      return Failure(AiApiServiceError('Erro ao gerar lista de compras: $e'));
     }
   }
 
@@ -194,5 +218,81 @@ class AiApiServiceMock implements AiApiService {
   /// Formata data para nome do menu
   String _formatarData(DateTime data) {
     return '${data.day.toString().padLeft(2, '0')}/${data.month.toString().padLeft(2, '0')}';
+  }
+
+  /// Cria uma lista de compras mock baseada no menu
+  ShoppingList _criarListaComprasMock({
+    required Menu menu,
+    required int numeroSemanas,
+    String? nome,
+    String? observacoes,
+  }) {
+    final itens = <ShoppingItem>[];
+    
+    // Ingredientes básicos que sempre aparecem
+    final ingredientesBasicos = {
+      'Arroz integral': '${numeroSemanas}kg',
+      'Feijão': '${numeroSemanas * 500}g',
+      'Óleo de cozinha': '1 litro',
+      'Sal': '1 pacote',
+      'Açúcar': '1kg',
+      'Leite': '${numeroSemanas * 2} litros',
+      'Ovos': '${numeroSemanas} dúzias',
+      'Pão integral': '${numeroSemanas * 2} unidades',
+      'Frango': '${numeroSemanas}kg',
+      'Carne bovina': '${numeroSemanas * 500}g',
+      'Peixe': '${numeroSemanas * 500}g',
+      'Batata': '${numeroSemanas}kg',
+      'Cebola': '${numeroSemanas * 500}g',
+      'Alho': '1 cabeça',
+      'Tomate': '${numeroSemanas * 500}g',
+      'Alface': '${numeroSemanas * 2} pés',
+      'Cenoura': '${numeroSemanas * 500}g',
+      'Brócolis': '${numeroSemanas * 2} unidades',
+      'Banana': '${numeroSemanas} dúzias',
+      'Maçã': '${numeroSemanas}kg',
+      'Iogurte natural': '${numeroSemanas * 4} unidades',
+    };
+
+    // Categorias para organizar os itens
+    final categorias = {
+      'Grãos e Cereais': ['Arroz integral', 'Feijão', 'Pão integral'],
+      'Proteínas': ['Frango', 'Carne bovina', 'Peixe', 'Ovos'],
+      'Laticínios': ['Leite', 'Iogurte natural'],
+      'Vegetais': ['Batata', 'Cebola', 'Alho', 'Tomate', 'Alface', 'Cenoura', 'Brócolis'],
+      'Frutas': ['Banana', 'Maçã'],
+      'Condimentos': ['Óleo de cozinha', 'Sal', 'Açúcar'],
+    };
+
+    // Cria os itens da lista
+    int itemIndex = 0;
+    for (final categoria in categorias.entries) {
+      for (final ingrediente in categoria.value) {
+        if (ingredientesBasicos.containsKey(ingrediente)) {
+          itens.add(ShoppingItem(
+            id: 'mock_item_${itemIndex++}',
+            nome: ingrediente,
+            quantidade: ingredientesBasicos[ingrediente]!,
+            categoria: categoria.key,
+            comprado: false,
+            observacoes: null,
+          ));
+        }
+      }
+    }
+
+    return ShoppingList(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      nome: nome?.trim().isNotEmpty == true 
+          ? nome! 
+          : 'Lista de Compras - ${menu.nome}',
+      dataCriacao: DateTime.now(),
+      menuId: menu.id,
+      menuNome: menu.nome,
+      numeroSemanas: numeroSemanas,
+      itens: itens,
+      observacoes: observacoes,
+      dataUltimaEdicao: DateTime.now(),
+    );
   }
 }

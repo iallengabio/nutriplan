@@ -2,6 +2,7 @@ import 'package:result_dart/result_dart.dart';
 import '../models/menu.dart';
 import '../models/perfil_familiar.dart';
 import '../models/refeicao.dart';
+import '../models/shopping_list.dart';
 
 /// Interface para o serviço de API de IA
 abstract class AiApiService {
@@ -18,6 +19,14 @@ abstract class AiApiService {
     required PerfilFamiliar perfil,
     required TipoRefeicao tipo,
     String? observacoesAdicionais,
+  });
+
+  /// Gera uma lista de compras baseada em um cardápio
+  Future<Result<ShoppingList>> gerarListaCompras({
+    required Menu menu,
+    required int numeroSemanas,
+    String? nome,
+    String? observacoes,
   });
 }
 

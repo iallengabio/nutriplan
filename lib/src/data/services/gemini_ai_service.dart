@@ -9,6 +9,7 @@ import '../../core/constants/prompts.dart';
 import '../../domain/models/menu.dart';
 import '../../domain/models/perfil_familiar.dart';
 import '../../domain/models/refeicao.dart';
+import '../../domain/models/shopping_list.dart';
 import '../../domain/services/ai_api_service.dart';
 
 /// Implementação do AiApiService usando Google Gemini
@@ -97,6 +98,60 @@ class GeminiAiService implements AiApiService {
       
       final refeicao = _parseRefeicaoFromJson(response.text!);
       return Success(refeicao);
+      
+    } on SocketException catch (e) {
+      return Failure(AiNetworkError('Erro de conexão: ${e.message}'));
+    } on GenerativeAIException catch (e) {
+      if (e.message.contains('quota') || e.message.contains('limit')) {
+        return Failure(AiRateLimitError('Limite de uso da API atingido: ${e.message}'));
+      }
+      return Failure(AiApiServiceError('Erro da API Gemini: ${e.message}'));
+    } catch (e) {
+      return Failure(AiApiServiceError('Erro inesperado: $e'));
+    }
+  }
+  
+  @override
+  Future<Result<ShoppingList>> gerarListaCompras({
+    required Menu menu,
+    required int numeroSemanas,
+    String? nome,
+    String? observacoes,
+  }) async {
+    try {
+      // Converte o menu para o formato esperado pelo prompt
+      final refeicoesPorDia = menu.refeicoesPorDia.entries.map((entry) {
+        return {
+          'diaSemana': entry.key.displayName,
+          'refeicoes': entry.value.map((refeicao) => {
+            'tipo': refeicao.tipo.displayName,
+            'nome': refeicao.nome,
+          }).toList(),
+        };
+      }).toList();
+      
+      final prompt = ShoppingListPrompts.gerarListaComprasPrompt(
+        menuNome: menu.nome,
+        refeicoesPorDia: refeicoesPorDia,
+        numeroSemanas: numeroSemanas,
+        observacoes: observacoes,
+      );
+      
+      final response = await _model.generateContent([
+        Content.text(prompt),
+      ]);
+      
+      if (response.text == null || response.text!.isEmpty) {
+        return Failure(AiApiServiceError('Resposta vazia da API do Gemini'));
+      }
+      
+      final shoppingList = _parseShoppingListFromJson(
+        response.text!,
+        menu,
+        numeroSemanas,
+        nome,
+      );
+      return Success(shoppingList);
       
     } on SocketException catch (e) {
       return Failure(AiNetworkError('Erro de conexão: ${e.message}'));
@@ -220,5 +275,54 @@ class GeminiAiService implements AiApiService {
     // A IA já fornece a descrição completa, então os ingredientes
     // específicos podem ser extraídos posteriormente se necessário
     return [];
+  }
+  
+  /// Converte a resposta JSON do Gemini em um objeto ShoppingList
+  ShoppingList _parseShoppingListFromJson(
+    String jsonResponse,
+    Menu menu,
+    int numeroSemanas,
+    String? nomePersonalizado,
+  ) {
+    try {
+      // Remove possíveis marcadores de código do JSON
+      String cleanJson = jsonResponse
+          .replaceAll('```json', '')
+          .replaceAll('```', '')
+          .trim();
+      
+      final Map<String, dynamic> data = jsonDecode(cleanJson);
+      
+      // Converte os itens da resposta da IA
+      final List<ShoppingItem> itens = [];
+      final itensData = data['itens'] as List? ?? [];
+      
+      for (int i = 0; i < itensData.length; i++) {
+        final itemData = itensData[i] as Map<String, dynamic>;
+        itens.add(ShoppingItem(
+          id: DateTime.now().millisecondsSinceEpoch.toString() + '_$i',
+          nome: itemData['nome'] ?? '',
+          quantidade: itemData['quantidade'] ?? '',
+          categoria: itemData['categoria'],
+          comprado: false,
+          observacoes: itemData['observacoes'],
+        ));
+      }
+      
+      return ShoppingList(
+        id: '', // Será definido pelo repository
+        nome: nomePersonalizado ?? data['nome'] ?? 'Lista de Compras - ${menu.nome}',
+        dataCriacao: DateTime.now(),
+        menuId: menu.id,
+        menuNome: menu.nome,
+        numeroSemanas: numeroSemanas,
+        itens: itens,
+        observacoes: data['observacoes'],
+        dataUltimaEdicao: DateTime.now(),
+      );
+      
+    } catch (e) {
+      throw AiApiServiceError('Erro ao processar resposta da IA: $e');
+    }
   }
 }

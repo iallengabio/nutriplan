@@ -9,12 +9,15 @@ import 'domain/repositories/settings_repository.dart';
 import 'presentation/features/settings/settings_viewmodel.dart';
 import 'presentation/features/settings/settings_state.dart';
 import 'data/repositories/firestore_menu_repository.dart';
+import 'data/repositories/firestore_shopping_list_repository.dart';
 import 'data/services/ai_api_service_mock.dart';
 import 'data/services/gemini_ai_service.dart';
 import 'core/constants/api_keys.dart';
 import 'domain/repositories/menu_repository.dart';
+import 'domain/repositories/shopping_list_repository.dart';
 import 'domain/services/ai_api_service.dart';
 import 'presentation/features/home/cardapios/menu_viewmodel.dart';
+import 'presentation/features/home/listas/shopping_list_viewmodel.dart';
 
 // Provider do Firebase Auth
 final firebaseAuthProvider = Provider<FirebaseAuth>((ref) {
@@ -96,5 +99,24 @@ final menuRepositoryProvider = Provider<MenuRepository>((ref) {
 // Provider do MenuViewModel
 final menuViewModelProvider = StateNotifierProvider<MenuViewModel, MenuState>((ref) {
   final repository = ref.read(menuRepositoryProvider);
-  return MenuViewModel(repository);
+  final shoppingListRepository = ref.read(shoppingListRepositoryProvider);
+  return MenuViewModel(repository, shoppingListRepository);
+});
+
+// Provider do ShoppingListRepository (usando Firestore)
+final shoppingListRepositoryProvider = Provider<ShoppingListRepository>((ref) {
+  final firestore = ref.read(firestoreProvider);
+  final firebaseAuth = ref.read(firebaseAuthProvider);
+  final aiApiService = ref.read(aiApiServiceProvider);
+  return FirestoreShoppingListRepository(
+    firestore,
+    firebaseAuth,
+    aiApiService,
+  );
+});
+
+// Provider do ShoppingListViewModel
+final shoppingListViewModelProvider = StateNotifierProvider<ShoppingListViewModel, ShoppingListState>((ref) {
+  final repository = ref.read(shoppingListRepositoryProvider);
+  return ShoppingListViewModel(repository);
 });

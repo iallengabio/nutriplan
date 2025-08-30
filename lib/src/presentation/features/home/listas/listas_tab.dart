@@ -1,37 +1,103 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../home_viewmodel.dart';
+import '../../../../di.dart';
+import '../../shopping/pages/create_shopping_list_from_menu_page.dart';
+import 'create_shopping_list_page.dart';
+import 'edit_shopping_list_page.dart';
+import 'shopping_list_viewmodel.dart';
 
-class ListasTab extends ConsumerWidget {
+class ListasTab extends ConsumerStatefulWidget {
   const ListasTab({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final homeState = ref.watch(homeViewModelProvider);
-    final homeViewModel = ref.read(homeViewModelProvider.notifier);
+  ConsumerState<ListasTab> createState() => _ListasTabState();
+}
+
+class _ListasTabState extends ConsumerState<ListasTab> {
+  @override
+  void initState() {
+    super.initState();
+    // Carregar listas ao inicializar
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(shoppingListViewModelProvider.notifier).carregarListasDeCompras();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final shoppingListState = ref.watch(shoppingListViewModelProvider);
+    final shoppingListViewModel = ref.read(shoppingListViewModelProvider.notifier);
     
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Minhas Listas de Compras',
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.bold,
+    return Scaffold(
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Minhas Listas de Compras',
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
             ),
-          ),
-          const SizedBox(height: 16),
-          Expanded(
-            child: _buildListasList(context, homeState, homeViewModel),
-          ),
-        ],
+            const SizedBox(height: 16),
+            Expanded(
+              child: _buildListasList(context, shoppingListState, shoppingListViewModel),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildListasList(BuildContext context, HomeState homeState, HomeViewModel homeViewModel) {
-    if (homeState.listas.isEmpty) {
+  Widget _buildListasList(BuildContext context, ShoppingListState state, ShoppingListViewModel viewModel) {
+    if (state.isLoading) {
+      return const Center(
+        child: CircularProgressIndicator(),
+      );
+    }
+
+    if (state.errorMessage != null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.error_outline,
+              size: 64,
+              color: Theme.of(context).colorScheme.error,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Erro ao carregar listas',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                color: Theme.of(context).colorScheme.error,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              state.errorMessage!,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            FilledButton(
+              onPressed: () => viewModel.carregarListasDeCompras(),
+              child: const Text('Tentar novamente'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (state.shoppingLists?.isEmpty ?? true) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -60,105 +126,147 @@ class ListasTab extends ConsumerWidget {
       );
     }
     
-    return ListView.builder(
-      itemCount: homeState.listas.length,
-      itemBuilder: (context, index) {
-        final lista = homeState.listas[index];
-        return Card(
-          margin: const EdgeInsets.only(bottom: 8),
-          child: ListTile(
-            leading: CircleAvatar(
-              backgroundColor: Theme.of(context).colorScheme.secondary,
-              child: Icon(
-                Icons.shopping_cart,
-                color: Theme.of(context).colorScheme.onSecondary,
+    return RefreshIndicator(
+      onRefresh: () async => viewModel.carregarListasDeCompras(),
+      child: ListView.builder(
+        itemCount: state.shoppingLists!.length,
+        itemBuilder: (context, index) {
+          final lista = state.shoppingLists![index];
+          final totalItens = lista.itens.length;
+          final itensComprados = lista.itens.where((item) => item.comprado).length;
+          
+          return Card(
+            margin: const EdgeInsets.only(bottom: 8),
+            child: ListTile(
+              leading: CircleAvatar(
+                backgroundColor: Theme.of(context).colorScheme.secondary,
+                child: Icon(
+                  Icons.shopping_cart,
+                  color: Theme.of(context).colorScheme.onSecondary,
+                ),
               ),
-            ),
-            title: Text(lista),
-            subtitle: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Criada em ${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year}'),
-                Text('${12} itens na lista'),
-              ],
-            ),
-            trailing: PopupMenuButton(
-              itemBuilder: (context) => [
-                const PopupMenuItem(
-                  value: 'edit',
-                  child: Row(
-                    children: [
-                      Icon(Icons.edit),
-                      SizedBox(width: 8),
-                      Text('Editar'),
-                    ],
+              title: Text(lista.nome),
+              subtitle: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Criada em ${_formatDate(lista.dataCriacao)}'),
+                  Text('$itensComprados/$totalItens itens comprados'),
+                  if (totalItens > 0)
+                    LinearProgressIndicator(
+                      value: itensComprados / totalItens,
+                      backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
+                    ),
+                ],
+              ),
+              trailing: PopupMenuButton(
+                itemBuilder: (context) => [
+                  const PopupMenuItem(
+                    value: 'edit',
+                    child: Row(
+                      children: [
+                        Icon(Icons.edit),
+                        SizedBox(width: 8),
+                        Text('Editar'),
+                      ],
+                    ),
                   ),
-                ),
-                const PopupMenuItem(
-                  value: 'share',
-                  child: Row(
-                    children: [
-                      Icon(Icons.share),
-                      SizedBox(width: 8),
-                      Text('Compartilhar'),
-                    ],
+                  const PopupMenuItem(
+                    value: 'duplicate',
+                    child: Row(
+                      children: [
+                        Icon(Icons.copy),
+                        SizedBox(width: 8),
+                        Text('Duplicar'),
+                      ],
+                    ),
                   ),
-                ),
-                const PopupMenuItem(
-                  value: 'duplicate',
-                  child: Row(
-                    children: [
-                      Icon(Icons.copy),
-                      SizedBox(width: 8),
-                      Text('Duplicar'),
-                    ],
+                  const PopupMenuItem(
+                    value: 'delete',
+                    child: Row(
+                      children: [
+                        Icon(Icons.delete, color: Colors.red),
+                        SizedBox(width: 8),
+                        Text('Excluir', style: TextStyle(color: Colors.red)),
+                      ],
+                    ),
                   ),
-                ),
-                const PopupMenuItem(
-                  value: 'delete',
-                  child: Row(
-                    children: [
-                      Icon(Icons.delete, color: Colors.red),
-                      SizedBox(width: 8),
-                      Text('Excluir', style: TextStyle(color: Colors.red)),
-                    ],
-                  ),
-                ),
-              ],
-              onSelected: (value) {
-                if (value == 'delete') {
-                  _showDeleteListaDialog(context, lista, homeViewModel);
-                }
-                // TODO: Implementar outras ações
+                ],
+                onSelected: (value) {
+                  switch (value) {
+                    case 'edit':
+                      _navegarParaEdicao(context, lista);
+                      break;
+                    case 'duplicate':
+                      _duplicarLista(context, lista.id, viewModel);
+                      break;
+                    case 'delete':
+                      _showDeleteListaDialog(context, lista, viewModel);
+                      break;
+                  }
+                },
+              ),
+              onTap: () {
+                _navegarParaEdicao(context, lista);
               },
             ),
-            onTap: () {
-              // TODO: Navegar para editar lista
-            },
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 
-  void _showDeleteListaDialog(BuildContext context, String lista, HomeViewModel homeViewModel) {
+  void _showCreateListDialog(BuildContext context, ShoppingListViewModel viewModel) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Nova Lista de Compras'),
+        content: const Text('Como você gostaria de criar a lista?'),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const CreateShoppingListFromMenuPage(),
+                ),
+              );
+            },
+            child: const Text('Baseada em Cardápio'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const CreateShoppingListPage(),
+                ),
+              );
+            },
+            child: const Text('Lista Manual'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDeleteListaDialog(BuildContext context, dynamic lista, ShoppingListViewModel viewModel) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Excluir Lista'),
-        content: Text('Tem certeza que deseja excluir a lista "$lista"?'),
+        content: Text('Tem certeza que deseja excluir a lista "${lista.nome}"?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
             child: const Text('Cancelar'),
           ),
-          TextButton(
+          FilledButton(
             onPressed: () {
-              homeViewModel.removerLista(lista);
+              viewModel.removerListaDeCompras(lista.id);
               Navigator.of(context).pop();
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text('Lista "$lista" excluída!'),
+                  content: Text('Lista "${lista.nome}" excluída!'),
                   backgroundColor: Theme.of(context).colorScheme.error,
                 ),
               );
@@ -168,5 +276,26 @@ class ListasTab extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  void _navegarParaEdicao(BuildContext context, dynamic lista) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => EditShoppingListPage(shoppingList: lista),
+      ),
+    );
+  }
+
+  void _duplicarLista(BuildContext context, String listaId, ShoppingListViewModel viewModel) {
+    viewModel.duplicarListaDeCompras(listaId);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Lista duplicada com sucesso!'),
+      ),
+    );
+  }
+
+  String _formatDate(DateTime date) {
+    return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
   }
 }
