@@ -205,7 +205,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                     ? NetworkImage(user.photoURL!) 
                     : null,
                   child: user.photoURL == null 
-                    ? Text(user.displayName?.substring(0, 1).toUpperCase() ?? 'U')
+                    ? Text((user.displayName?.isNotEmpty == true ? user.displayName!.substring(0, 1).toUpperCase() : 'U'))
                     : null,
                 ),
                 title: Text(user.displayName ?? 'Usuário'),
