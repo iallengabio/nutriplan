@@ -171,6 +171,16 @@ class _ListasTabState extends ConsumerState<ListasTab> {
                     ),
                   ),
                   const PopupMenuItem(
+                    value: 'share',
+                    child: Row(
+                      children: [
+                        Icon(Icons.share),
+                        SizedBox(width: 8),
+                        Text('Compartilhar'),
+                      ],
+                    ),
+                  ),
+                  const PopupMenuItem(
                     value: 'duplicate',
                     child: Row(
                       children: [
@@ -195,6 +205,9 @@ class _ListasTabState extends ConsumerState<ListasTab> {
                   switch (value) {
                     case 'edit':
                       _navegarParaEdicao(context, lista);
+                      break;
+                    case 'share':
+                      _compartilharLista(context, lista, viewModel);
                       break;
                     case 'duplicate':
                       _duplicarLista(context, lista.id, viewModel);
@@ -297,5 +310,36 @@ class _ListasTabState extends ConsumerState<ListasTab> {
 
   String _formatDate(DateTime date) {
     return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
+  }
+
+  void _compartilharLista(BuildContext context, dynamic lista, ShoppingListViewModel viewModel) {
+    viewModel.compartilharLista(lista);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Compartilhando lista...'),
+      ),
+    );
+  }
+
+  void _importarLista(BuildContext context, ShoppingListViewModel viewModel) async {
+    try {
+      await viewModel.importarLista();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Lista importada com sucesso!'),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erro ao importar lista: $e'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      }
+    }
   }
 }

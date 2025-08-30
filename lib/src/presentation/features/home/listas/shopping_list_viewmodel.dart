@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../domain/models/shopping_list.dart';
 import '../../../../domain/models/menu.dart';
 import '../../../../domain/repositories/shopping_list_repository.dart';
+import '../../../../core/services/file_sharing_service.dart';
 
 // Estado da Lista de Compras
 class ShoppingListState {
@@ -367,5 +368,56 @@ class ShoppingListViewModel extends StateNotifier<ShoppingListState> {
     state = state.copyWith(clearError: true);
   }
 
+  /// Compartilha uma lista de compras como arquivo .nutriplan
+  Future<void> compartilharLista(ShoppingList shoppingList) async {
+    try {
+      await FileSharingService.shareShoppingList(shoppingList);
+    } catch (e) {
+      state = state.copyWith(
+        errorMessage: 'Erro ao compartilhar lista: ${e.toString()}',
+      );
+    }
+  }
+
+  /// Importa uma lista de compras de um arquivo .nutriplan
+  Future<void> importarLista() async {
+    state = state.copyWith(isLoading: true, clearError: true);
+    
+    try {
+      final shoppingList = await FileSharingService.pickAndImportShoppingList();
+      
+      if (shoppingList != null) {
+        // Salva a lista importada
+        final result = await _shoppingListRepository.salvarNovaListaCompras(shoppingList);
+        
+        result.fold(
+          (listaSalva) {
+            // Adiciona a nova lista no início da lista local
+            final listasAtualizadas = List<ShoppingList>.from(state.shoppingLists);
+            listasAtualizadas.insert(0, listaSalva);
+            
+            state = state.copyWith(
+              isLoading: false,
+              shoppingLists: listasAtualizadas,
+              shoppingListSelecionada: listaSalva,
+            );
+          },
+          (error) {
+            state = state.copyWith(
+              isLoading: false,
+              errorMessage: 'Erro ao salvar lista importada: ${error.toString()}',
+            );
+          },
+        );
+      } else {
+        state = state.copyWith(isLoading: false);
+      }
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: 'Erro ao importar lista: ${e.toString()}',
+      );
+    }
+  }
 
 }
