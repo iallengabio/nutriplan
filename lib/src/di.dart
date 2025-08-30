@@ -10,6 +10,8 @@ import 'presentation/features/settings/settings_viewmodel.dart';
 import 'presentation/features/settings/settings_state.dart';
 import 'data/repositories/firestore_menu_repository.dart';
 import 'data/services/ai_api_service_mock.dart';
+import 'data/services/gemini_ai_service.dart';
+import 'core/constants/api_keys.dart';
 import 'domain/repositories/menu_repository.dart';
 import 'domain/services/ai_api_service.dart';
 import 'presentation/features/home/cardapios/menu_viewmodel.dart';
@@ -60,8 +62,23 @@ final settingsViewModelProvider = StateNotifierProvider<SettingsViewModel, Setti
 });
 
 // Provider do AiApiService
+// Usa Gemini se a chave estiver configurada, senão usa o mock
 final aiApiServiceProvider = Provider<AiApiService>((ref) {
+  if (ApiKeys.isGeminiConfigured) {
+    return GeminiAiService();
+  } else {
+    return AiApiServiceMock();
+  }
+});
+
+// Provider específico para o mock (para testes)
+final aiApiServiceMockProvider = Provider<AiApiService>((ref) {
   return AiApiServiceMock();
+});
+
+// Provider específico para o Gemini
+final geminiAiServiceProvider = Provider<AiApiService>((ref) {
+  return GeminiAiService();
 });
 
 // Provider do MenuRepository (usando Firestore)

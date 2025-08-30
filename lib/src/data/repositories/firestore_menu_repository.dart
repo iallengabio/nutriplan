@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:result_dart/result_dart.dart';
+import '../../core/services/rate_limit_service.dart';
 import '../../domain/models/menu.dart';
 import '../../domain/models/perfil_familiar.dart';
 import '../../domain/models/refeicao.dart';
@@ -41,6 +42,17 @@ class FirestoreMenuRepository implements MenuRepository {
         return Failure(Exception('Usuário não autenticado'));
       }
 
+      // Verifica rate limiting
+      final canMakeCall = await RateLimitService.canMakeCall(_currentUserId!);
+      if (!canMakeCall) {
+        final remainingCalls = await RateLimitService.getRemainingCalls(_currentUserId!);
+        return Failure(RateLimitExceededException(
+          message: 'Limite diário de gerações atingido. Você pode gerar até ${RateLimitService.maxCallsPerDay} cardápios por dia.',
+          remainingCalls: remainingCalls,
+          maxCalls: RateLimitService.maxCallsPerDay,
+        ));
+      }
+
       // Gera o cardápio usando IA
       final menuResult = await _aiApiService.gerarCardapio(
         perfil: perfil,
@@ -49,8 +61,12 @@ class FirestoreMenuRepository implements MenuRepository {
         observacoesAdicionais: observacoesAdicionais,
       );
 
-      return menuResult.fold(
-        (menu) => Success(menu),
+      return await menuResult.fold(
+        (menu) async {
+          // Registra a chamada bem-sucedida
+          await RateLimitService.recordCall(_currentUserId!);
+          return Success(menu);
+        },
         (error) => Failure(Exception(error.toString())),
       );
     } catch (e) {
@@ -75,6 +91,7 @@ class FirestoreMenuRepository implements MenuRepository {
   }
 
   /// Salva um novo cardápio permitindo que o Firebase gere o ID automaticamente
+  @override
   Future<Result<Menu>> salvarNovoMenu(Menu menu) async {
     try {
       final collection = _menusCollection;
@@ -203,6 +220,17 @@ class FirestoreMenuRepository implements MenuRepository {
         return Failure(Exception('Usuário não autenticado'));
       }
 
+      // Verifica rate limiting
+      final canMakeCall = await RateLimitService.canMakeCall(_currentUserId!);
+      if (!canMakeCall) {
+        final remainingCalls = await RateLimitService.getRemainingCalls(_currentUserId!);
+        return Failure(RateLimitExceededException(
+          message: 'Limite diário de gerações atingido. Você pode gerar até ${RateLimitService.maxCallsPerDay} refeições alternativas por dia.',
+          remainingCalls: remainingCalls,
+          maxCalls: RateLimitService.maxCallsPerDay,
+        ));
+      }
+
       // Gera a refeição alternativa usando IA
       final refeicaoResult = await _aiApiService.gerarRefeicaoAlternativa(
         perfil: perfil,
@@ -210,8 +238,12 @@ class FirestoreMenuRepository implements MenuRepository {
         observacoesAdicionais: observacoesAdicionais,
       );
 
-      return refeicaoResult.fold(
-        (refeicao) => Success(refeicao),
+      return await refeicaoResult.fold(
+        (refeicao) async {
+          // Registra a chamada bem-sucedida
+          await RateLimitService.recordCall(_currentUserId!);
+          return Success(refeicao);
+        },
         (error) => Failure(Exception(error.toString())),
       );
     } catch (e) {

@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../../../domain/models/settings.dart';
 import '../../../di.dart';
 import 'settings_state.dart';
+import 'widgets/api_usage_widget.dart';
 
 class SettingsPage extends ConsumerStatefulWidget {
   const SettingsPage({super.key});
@@ -107,11 +108,17 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   }
 
   Widget _buildSettingsContent(Settings settings) {
+    final user = FirebaseAuth.instance.currentUser;
+    
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
         _buildThemeSection(settings),
         const SizedBox(height: 24),
+        if (user != null) ...[
+          const ApiUsageWidget(),
+          const SizedBox(height: 24),
+        ],
         _buildActionsSection(),
       ],
     );

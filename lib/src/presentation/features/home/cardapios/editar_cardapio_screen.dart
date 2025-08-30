@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../domain/models/menu.dart';
+import '../../../../domain/models/perfil_familiar.dart';
 import '../../../../domain/models/refeicao.dart';
 import '../../../../di.dart';
 import 'menu_viewmodel.dart';
@@ -24,6 +25,9 @@ class _EditarCardapioScreenState extends ConsumerState<EditarCardapioScreen> {
   late Menu _menuEditado;
   DiaSemana _diaSelecionado = DiaSemana.segunda;
   late ScrollController _scrollController;
+  
+  // Mapa para controlar o estado de carregamento de cada refeição
+  final Map<String, bool> _refeicaoCarregando = {};
 
   @override
   void initState() {
@@ -253,20 +257,45 @@ class _EditarCardapioScreenState extends ConsumerState<EditarCardapioScreen> {
                   ),
                 ),
                 const Spacer(),
-                PopupMenuButton<String>(
-                  onSelected: (value) {
-                    switch (value) {
-                      case 'editar':
-                        _editarRefeicao(index);
-                        break;
-                      case 'alternativa':
-                        _gerarAlternativa(refeicao.tipo, menuViewModel);
-                        break;
-                      case 'remover':
-                        _removerRefeicao(index);
-                        break;
-                    }
-                  },
+                // Mostrar indicador de carregamento se a refeição estiver sendo processada
+                if (_refeicaoCarregando[refeicao.id] == true)
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'Gerando...',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.blue,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  )
+                else
+                  PopupMenuButton<String>(
+                    onSelected: (value) {
+                      switch (value) {
+                        case 'editar':
+                          _editarRefeicao(index);
+                          break;
+                        case 'alternativa':
+                          _gerarAlternativa(refeicao.tipo, menuViewModel, index);
+                          break;
+                        case 'remover':
+                          _removerRefeicao(index);
+                          break;
+                      }
+                    },
                   itemBuilder: (context) => [
                     const PopupMenuItem(
                       value: 'editar',
@@ -469,13 +498,78 @@ class _EditarCardapioScreenState extends ConsumerState<EditarCardapioScreen> {
     );
   }
 
-  void _gerarAlternativa(TipoRefeicao tipo, MenuViewModel menuViewModel) async {
-    // TODO: Implementar geração de alternativa
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Funcionalidade de gerar alternativa será implementada'),
-      ),
-    );
+  void _gerarAlternativa(TipoRefeicao tipo, MenuViewModel menuViewModel, int refeicaoIndex) async {
+    final refeicoesDoDia = _menuEditado.refeicoesDoDia(_diaSelecionado);
+    if (refeicaoIndex >= refeicoesDoDia.length) return;
+    
+    final refeicaoOriginal = refeicoesDoDia[refeicaoIndex];
+    final refeicaoId = refeicaoOriginal.id;
+    
+    // Marcar refeição como carregando
+    setState(() {
+      _refeicaoCarregando[refeicaoId] = true;
+    });
+    
+    try {
+      // Criar um perfil familiar baseado no menu atual
+      final perfil = PerfilFamiliar(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        numeroAdultos: 2, // Valor padrão, pode ser configurado
+        numeroCriancas: 0, // Valor padrão, pode ser configurado
+        restricoesAlimentares: <RestricaoAlimentar>{}, // Pode ser configurado baseado no menu
+        observacoesAdicionais: _menuEditado.observacoes,
+        dataUltimaAtualizacao: DateTime.now(),
+      );
+
+      await menuViewModel.gerarRefeicaoAlternativa(
+        perfil: perfil,
+        tipo: tipo,
+        observacoesAdicionais: 'Gerar alternativa para ${tipo.displayName}',
+      );
+
+      // Verificar se houve erro
+      final currentState = ref.read(menuViewModelProvider);
+      if (currentState.errorMessage != null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(currentState.errorMessage!),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      } else if (currentState.refeicaoAlternativaGerada != null) {
+        // Substituir a refeição no menu local
+        final novaRefeicao = currentState.refeicaoAlternativaGerada!;
+        
+        setState(() {
+          _menuEditado = _menuEditado.substituirRefeicao(
+            _diaSelecionado,
+            refeicaoOriginal.id,
+            novaRefeicao,
+          );
+        });
+        
+        // Limpar a refeição alternativa do estado
+        menuViewModel.limparRefeicaoAlternativa();
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Refeição "${refeicaoOriginal.nome}" foi substituída por "${novaRefeicao.nome}"!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      }
+    } finally {
+      // Sempre limpar o estado de carregamento
+      if (mounted) {
+        setState(() {
+          _refeicaoCarregando[refeicaoId] = false;
+        });
+      }
+    }
   }
 
   void _removerRefeicao(int index) {

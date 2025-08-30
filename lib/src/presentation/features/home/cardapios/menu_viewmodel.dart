@@ -12,6 +12,7 @@ class MenuState {
   final Menu? menuSelecionado;
   final bool isGeneratingMenu;
   final bool isSaving;
+  final Refeicao? refeicaoAlternativaGerada;
 
   const MenuState({
     this.menus = const [],
@@ -20,6 +21,7 @@ class MenuState {
     this.menuSelecionado,
     this.isGeneratingMenu = false,
     this.isSaving = false,
+    this.refeicaoAlternativaGerada,
   });
 
   MenuState copyWith({
@@ -29,8 +31,10 @@ class MenuState {
     Menu? menuSelecionado,
     bool? isGeneratingMenu,
     bool? isSaving,
+    Refeicao? refeicaoAlternativaGerada,
     bool clearError = false,
     bool clearMenuSelecionado = false,
+    bool clearRefeicaoAlternativa = false,
   }) {
     return MenuState(
       menus: menus ?? this.menus,
@@ -39,6 +43,7 @@ class MenuState {
       menuSelecionado: clearMenuSelecionado ? null : (menuSelecionado ?? this.menuSelecionado),
       isGeneratingMenu: isGeneratingMenu ?? this.isGeneratingMenu,
       isSaving: isSaving ?? this.isSaving,
+      refeicaoAlternativaGerada: clearRefeicaoAlternativa ? null : (refeicaoAlternativaGerada ?? this.refeicaoAlternativaGerada),
     );
   }
 }
@@ -263,7 +268,7 @@ class MenuViewModel extends StateNotifier<MenuState> {
     required TipoRefeicao tipo,
     String? observacoesAdicionais,
   }) async {
-    state = state.copyWith(isLoading: true, clearError: true);
+    state = state.copyWith(isLoading: true, clearError: true, clearRefeicaoAlternativa: true);
 
     final result = await _menuRepository.gerarRefeicaoAlternativa(
       perfil: perfil,
@@ -273,8 +278,10 @@ class MenuViewModel extends StateNotifier<MenuState> {
 
     result.fold(
       (refeicao) {
-        state = state.copyWith(isLoading: false);
-        // A refeição alternativa será tratada pela tela que chamou este método
+        state = state.copyWith(
+          isLoading: false,
+          refeicaoAlternativaGerada: refeicao,
+        );
       },
       (error) {
         state = state.copyWith(
@@ -306,6 +313,11 @@ class MenuViewModel extends StateNotifier<MenuState> {
   /// Limpa mensagens de erro
   void limparErro() {
     state = state.copyWith(clearError: true);
+  }
+
+  /// Limpa a refeição alternativa gerada
+  void limparRefeicaoAlternativa() {
+    state = state.copyWith(clearRefeicaoAlternativa: true);
   }
 
   /// Atualiza uma refeição específica no menu selecionado
