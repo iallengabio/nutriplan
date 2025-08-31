@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/extensions/date_extensions.dart';
 import '../../../../di.dart';
 import '../../shopping/pages/create_shopping_list_from_menu_page.dart';
 import 'create_shopping_list_page.dart';
 import 'edit_shopping_list_page.dart';
 import 'shopping_list_viewmodel.dart';
+import 'widgets/delete_confirmation_dialog.dart';
 
 class ListasTab extends ConsumerStatefulWidget {
   const ListasTab({super.key});
@@ -149,7 +151,7 @@ class _ListasTabState extends ConsumerState<ListasTab> {
               subtitle: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Criada em ${_formatDate(lista.dataCriacao)}'),
+                  Text('Criada em ${lista.dataCriacao.formatarDataBrasileira()}'),
                   Text('$itensComprados/$totalItens itens comprados'),
                   if (totalItens > 0)
                     LinearProgressIndicator(
@@ -265,29 +267,19 @@ class _ListasTabState extends ConsumerState<ListasTab> {
   void _showDeleteListaDialog(BuildContext context, dynamic lista, ShoppingListViewModel viewModel) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Excluir Lista'),
-        content: Text('Tem certeza que deseja excluir a lista "${lista.nome}"?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancelar'),
-          ),
-          FilledButton(
-            onPressed: () {
-              viewModel.removerListaDeCompras(lista.id);
-              Navigator.of(context).pop();
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Lista "${lista.nome}" excluída!'),
-                  backgroundColor: Theme.of(context).colorScheme.error,
-                ),
-              );
-            },
-            child: const Text('Excluir'),
-          ),
-        ],
-      ),
+      builder: (context) => DeleteConfirmationDialog(
+         title: 'Excluir Lista',
+         content: 'Tem certeza que deseja excluir a lista "${lista.nome}"?',
+         onConfirm: () {
+           viewModel.removerListaDeCompras(lista.id);
+           ScaffoldMessenger.of(context).showSnackBar(
+             SnackBar(
+               content: Text('Lista "${lista.nome}" excluída!'),
+               backgroundColor: Theme.of(context).colorScheme.error,
+             ),
+           );
+         },
+       ),
     );
   }
 
@@ -308,9 +300,7 @@ class _ListasTabState extends ConsumerState<ListasTab> {
     );
   }
 
-  String _formatDate(DateTime date) {
-    return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
-  }
+
 
   void _compartilharLista(BuildContext context, dynamic lista, ShoppingListViewModel viewModel) {
     viewModel.compartilharLista(lista);

@@ -1,11 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/extensions/date_extensions.dart';
 import '../../../../domain/models/menu.dart';
 import '../../../../domain/models/perfil_familiar.dart';
 import '../../../../domain/models/refeicao.dart';
 import '../../../../di.dart';
 import 'menu_viewmodel.dart';
+import 'widgets/info_basica_widget.dart';
+import 'widgets/info_perfil_widget.dart';
+import 'widgets/observacoes_widget.dart';
+import 'widgets/refeicao_card_widget.dart';
+import 'widgets/refeicoes_section_widget.dart';
+import 'widgets/seletor_dia_widget.dart';
 
 class EditarCardapioScreen extends ConsumerStatefulWidget {
   final Menu menu;
@@ -97,314 +104,51 @@ class _EditarCardapioScreenState extends ConsumerState<EditarCardapioScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildInfoBasica(),
+                  InfoBasicaWidget(
+                    nomeController: _nomeController,
+                    menu: _menuEditado,
+                    onNomeChanged: (value) {
+                      setState(() {
+                        _menuEditado = _menuEditado.copyWith(nome: value);
+                      });
+                    },
+                    infoPerfilWidget: InfoPerfilWidget(menu: _menuEditado),
+                  ),
                   const SizedBox(height: 24),
-                  _buildRefeicoes(menuViewModel),
+                  RefeicoesSectionWidget(
+                    menu: _menuEditado,
+                    diaSelecionado: _diaSelecionado,
+                    onDiaChanged: (dia) {
+                      setState(() {
+                        _diaSelecionado = dia;
+                      });
+                      _centralizarDiaSelecionado();
+                    },
+                    scrollController: _scrollController,
+                    refeicaoCarregando: _refeicaoCarregando,
+                    onAdicionarRefeicao: _adicionarRefeicao,
+                    onEditarRefeicao: _editarRefeicao,
+                    onGerarAlternativa: _gerarAlternativa,
+                    onRemoverRefeicao: _removerRefeicao,
+                    menuViewModel: menuViewModel,
+                  ),
                   const SizedBox(height: 24),
-                  _buildObservacoes(),
+                  ObservacoesWidget(
+                  controller: _observacoesController,
+                  title: 'Observações do Cardápio',
+                  hintText: 'Adicione observações especiais para este cardápio...',
+                ),
                 ],
               ),
             ),
     );
   }
 
-  Widget _buildInfoBasica() {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Informações Básicas',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _nomeController,
-              decoration: const InputDecoration(
-                labelText: 'Nome do Cardápio',
-                border: OutlineInputBorder(),
-              ),
-              onChanged: (value) {
-                setState(() {
-                  _menuEditado = _menuEditado.copyWith(nome: value);
-                });
-              },
-            ),
-            const SizedBox(height: 16),
-            _buildInfoPerfil(),
-          ],
-        ),
-      ),
-    );
-  }
 
-  Widget _buildInfoPerfil() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Informações do Cardápio',
-          style: Theme.of(context).textTheme.titleMedium,
-        ),
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            Icon(Icons.calendar_today, size: 16, color: Colors.grey[600]),
-            const SizedBox(width: 8),
-            Text('Criado em: ${_formatDate(_menuEditado.dataCriacao)}'),
-          ],
-        ),
-        if (_menuEditado.dataUltimaEdicao != null) ...[
-          const SizedBox(height: 4),
-          Row(
-            children: [
-              Icon(Icons.edit, size: 16, color: Colors.grey[600]),
-              const SizedBox(width: 8),
-              Text('Última edição: ${_formatDate(_menuEditado.dataUltimaEdicao!)}'),
-            ],
-          ),
-        ],
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            Icon(Icons.restaurant, size: 16, color: Colors.grey[600]),
-            const SizedBox(width: 8),
-            Text('Total de refeições: ${_menuEditado.totalRefeicoes}'),
-          ],
-        ),
-      ],
-    );
-  }
 
-  Widget _buildRefeicoes(MenuViewModel menuViewModel) {
-    final refeicoesDoDia = _menuEditado.refeicoesDoDia(_diaSelecionado);
-    
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Refeições',
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-                IconButton(
-                  icon: const Icon(Icons.add),
-                  onPressed: () => _adicionarRefeicao(),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            _buildSeletorDia(),
-            const SizedBox(height: 16),
-            if (refeicoesDoDia.isEmpty)
-              const Center(
-                child: Padding(
-                  padding: EdgeInsets.all(32),
-                  child: Text(
-                    'Nenhuma refeição para este dia.\nToque no botão + para adicionar.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: Colors.grey),
-                  ),
-                ),
-              )
-            else
-              ListView.separated(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: refeicoesDoDia.length,
-                separatorBuilder: (context, index) => const SizedBox(height: 12),
-                itemBuilder: (context, index) {
-                  final refeicao = refeicoesDoDia[index];
-                  return _buildRefeicaoCard(refeicao, index, menuViewModel);
-                },
-              ),
-          ],
-        ),
-      ),
-    );
-  }
 
-  Widget _buildRefeicaoCard(Refeicao refeicao, int index, MenuViewModel menuViewModel) {
-    return Card(
-      elevation: 2,
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: _getTipoRefeicaoColor(refeicao.tipo),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    refeicao.tipo.displayName,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-                const Spacer(),
-                // Mostrar indicador de carregamento se a refeição estiver sendo processada
-                if (_refeicaoCarregando[refeicao.id] == true)
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      const Text(
-                        'Gerando...',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.blue,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  )
-                else
-                  PopupMenuButton<String>(
-                    onSelected: (value) {
-                      switch (value) {
-                        case 'editar':
-                          _editarRefeicao(index);
-                          break;
-                        case 'alternativa':
-                          _gerarAlternativa(refeicao.tipo, menuViewModel, index);
-                          break;
-                        case 'remover':
-                          _removerRefeicao(index);
-                          break;
-                      }
-                    },
-                  itemBuilder: (context) => [
-                    const PopupMenuItem(
-                      value: 'editar',
-                      child: Row(
-                        children: [
-                          Icon(Icons.edit),
-                          SizedBox(width: 8),
-                          Text('Editar'),
-                        ],
-                      ),
-                    ),
-                    const PopupMenuItem(
-                      value: 'alternativa',
-                      child: Row(
-                        children: [
-                          Icon(Icons.refresh),
-                          SizedBox(width: 8),
-                          Text('Gerar Alternativa'),
-                        ],
-                      ),
-                    ),
-                    const PopupMenuItem(
-                      value: 'remover',
-                      child: Row(
-                        children: [
-                          Icon(Icons.delete, color: Colors.red),
-                          SizedBox(width: 8),
-                          Text('Remover', style: TextStyle(color: Colors.red)),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              refeicao.nome,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              refeicao.descricao,
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Icon(Icons.timer, size: 16, color: Colors.grey[600]),
-                const SizedBox(width: 4),
-                Text(
-                  '${refeicao.tempoPreparoMinutos} min',
-                  style: TextStyle(color: Colors.grey[600], fontSize: 12),
-                ),
-                const SizedBox(width: 16),
-                Icon(Icons.people, size: 16, color: Colors.grey[600]),
-                const SizedBox(width: 4),
-                Text(
-                  '${refeicao.porcoes} porções',
-                  style: TextStyle(color: Colors.grey[600], fontSize: 12),
-                ),
-              ],
-            ),
-            if (refeicao.ingredientes.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              Text(
-                'Ingredientes: ${refeicao.ingredientes.take(3).join(', ')}${refeicao.ingredientes.length > 3 ? '...' : ''}',
-                style: TextStyle(color: Colors.grey[700], fontSize: 12),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
 
-  Widget _buildObservacoes() {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Observações',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _observacoesController,
-              decoration: const InputDecoration(
-                labelText: 'Observações adicionais',
-                border: OutlineInputBorder(),
-                hintText: 'Digite observações sobre o cardápio...',
-              ),
-              maxLines: 3,
-              onChanged: (value) {
-                setState(() {
-                  _menuEditado = _menuEditado.copyWith(observacoes: value.isEmpty ? null : value);
-                });
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+
 
   Color _getTipoRefeicaoColor(TipoRefeicao tipo) {
     switch (tipo) {
@@ -421,30 +165,7 @@ class _EditarCardapioScreenState extends ConsumerState<EditarCardapioScreen> {
     }
   }
 
-  Widget _buildSeletorDia() {
-    return SingleChildScrollView(
-      controller: _scrollController,
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: DiaSemana.values.map((dia) {
-          final isSelected = dia == _diaSelecionado;
-          return Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: FilterChip(
-              label: Text(dia.displayName.split('-').first),
-              selected: isSelected,
-              onSelected: (selected) {
-                setState(() {
-                  _diaSelecionado = dia;
-                });
-                _centralizarDiaSelecionado();
-              },
-            ),
-          );
-        }).toList(),
-      ),
-    );
-  }
+
 
   /// Centraliza o dia selecionado no scroll horizontal
   void _centralizarDiaSelecionado() {
@@ -471,9 +192,7 @@ class _EditarCardapioScreenState extends ConsumerState<EditarCardapioScreen> {
     );
   }
 
-  String _formatDate(DateTime date) {
-    return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
-  }
+
 
   void _adicionarRefeicao() {
     // TODO: Implementar diálogo para adicionar nova refeição

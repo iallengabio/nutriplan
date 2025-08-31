@@ -2,8 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../domain/models/perfil_familiar.dart';
 import '../../../../domain/models/refeicao.dart';
-import 'menu_viewmodel.dart';
 import 'editar_cardapio_screen.dart';
+import 'menu_viewmodel.dart';
+import 'widgets/perfil_familiar_widget.dart';
+import 'widgets/tipos_refeicao_widget.dart';
+import 'widgets/observacoes_widget.dart';
+import 'widgets/nome_cardapio_widget.dart';
+import 'widgets/botoes_acao_widget.dart';
 import '../../../../di.dart';
 
 class CriarCardapioScreen extends ConsumerStatefulWidget {
@@ -22,6 +27,7 @@ class _CriarCardapioScreenState extends ConsumerState<CriarCardapioScreen> {
   int _numeroCriancas = 0;
   Set<RestricaoAlimentar> _restricoesAlimentares = {};
   Set<TipoRefeicao> _tiposRefeicao = {TipoRefeicao.almoco, TipoRefeicao.jantar};
+  String? _erroTiposRefeicao;
   
   @override
   void dispose() {
@@ -47,15 +53,54 @@ class _CriarCardapioScreenState extends ConsumerState<CriarCardapioScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildNomeSection(),
+              NomeCardapioWidget(
+                controller: _nomeController,
+                title: 'Nome do Cardápio',
+                hintText: 'Ex: Cardápio da Semana (opcional)',
+              ),
               const SizedBox(height: 24),
-              _buildPerfilFamiliarSection(),
+              PerfilFamiliarWidget(
+                  numeroAdultos: _numeroAdultos,
+                  numeroCriancas: _numeroCriancas,
+                  restricoesAlimentares: _restricoesAlimentares,
+                  onAdultosChanged: (valor) {
+                    setState(() {
+                      _numeroAdultos = valor;
+                    });
+                  },
+                  onCriancasChanged: (valor) {
+                    setState(() {
+                      _numeroCriancas = valor;
+                    });
+                  },
+                  onRestricaoChanged: (restricoes) {
+                    setState(() {
+                      _restricoesAlimentares = restricoes;
+                    });
+                  },
+                ),
               const SizedBox(height: 24),
-              _buildTiposRefeicaoSection(),
+              TiposRefeicaoWidget(
+                  tiposSelecionados: _tiposRefeicao,
+                  onChanged: (tipos) {
+                    setState(() {
+                      _tiposRefeicao = tipos;
+                      _erroTiposRefeicao = null;
+                    });
+                  },
+                  showError: _erroTiposRefeicao != null,
+                ),
               const SizedBox(height: 24),
-              _buildObservacoesSection(),
+              ObservacoesWidget(
+                  controller: _observacoesController,
+                  title: 'Observações',
+                  hintText: 'Adicione observações especiais para o cardápio...',
+                ),
               const SizedBox(height: 32),
-              _buildBotoesAcao(context, menuState, menuViewModel),
+              BotoesAcaoWidget(
+                menuState: menuState,
+                onGerarCardapio: () => _gerarCardapio(menuViewModel),
+              ),
             ],
           ),
         ),
@@ -63,312 +108,7 @@ class _CriarCardapioScreenState extends ConsumerState<CriarCardapioScreen> {
     );
   }
 
-  Widget _buildNomeSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Nome do Cardápio',
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const SizedBox(height: 8),
-        TextFormField(
-          controller: _nomeController,
-          decoration: const InputDecoration(
-            hintText: 'Ex: Cardápio da Semana (opcional)',
-            border: OutlineInputBorder(),
-          ),
-        ),
-      ],
-    );
-  }
 
-  Widget _buildPerfilFamiliarSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Perfil Familiar',
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const SizedBox(height: 16),
-        
-        // Número de adultos
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                'Número de adultos:',
-                style: Theme.of(context).textTheme.bodyLarge,
-              ),
-            ),
-            Row(
-              children: [
-                IconButton(
-                  onPressed: _numeroAdultos > 1 ? () {
-                    setState(() {
-                      _numeroAdultos--;
-                    });
-                  } : null,
-                  icon: const Icon(Icons.remove),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Theme.of(context).colorScheme.outline),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    _numeroAdultos.toString(),
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                ),
-                IconButton(
-                  onPressed: _numeroAdultos < 10 ? () {
-                    setState(() {
-                      _numeroAdultos++;
-                    });
-                  } : null,
-                  icon: const Icon(Icons.add),
-                ),
-              ],
-            ),
-          ],
-        ),
-        
-        const SizedBox(height: 16),
-        
-        // Número de crianças
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                'Número de crianças:',
-                style: Theme.of(context).textTheme.bodyLarge,
-              ),
-            ),
-            Row(
-              children: [
-                IconButton(
-                  onPressed: _numeroCriancas > 0 ? () {
-                    setState(() {
-                      _numeroCriancas--;
-                    });
-                  } : null,
-                  icon: const Icon(Icons.remove),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Theme.of(context).colorScheme.outline),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    _numeroCriancas.toString(),
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                ),
-                IconButton(
-                  onPressed: _numeroCriancas < 10 ? () {
-                    setState(() {
-                      _numeroCriancas++;
-                    });
-                  } : null,
-                  icon: const Icon(Icons.add),
-                ),
-              ],
-            ),
-          ],
-        ),
-        
-        const SizedBox(height: 16),
-        
-        // Restrições alimentares
-        Text(
-          'Restrições Alimentares:',
-          style: Theme.of(context).textTheme.bodyLarge,
-        ),
-        const SizedBox(height: 8),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: RestricaoAlimentar.values.map((restricao) {
-            final isSelected = _restricoesAlimentares.contains(restricao);
-            return FilterChip(
-              label: Text(_getRestricaoLabel(restricao)),
-              selected: isSelected,
-              onSelected: (selected) {
-                setState(() {
-                  if (selected) {
-                    _restricoesAlimentares.add(restricao);
-                  } else {
-                    _restricoesAlimentares.remove(restricao);
-                  }
-                });
-              },
-            );
-          }).toList(),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildTiposRefeicaoSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Tipos de Refeição',
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          'Selecione quais refeições deseja incluir no cardápio:',
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-          ),
-        ),
-        const SizedBox(height: 16),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: TipoRefeicao.values.map((tipo) {
-            final isSelected = _tiposRefeicao.contains(tipo);
-            return FilterChip(
-              label: Text(_getTipoRefeicaoLabel(tipo)),
-              selected: isSelected,
-              onSelected: (selected) {
-                setState(() {
-                  if (selected) {
-                    _tiposRefeicao.add(tipo);
-                  } else {
-                    _tiposRefeicao.remove(tipo);
-                  }
-                });
-              },
-            );
-          }).toList(),
-        ),
-        if (_tiposRefeicao.isEmpty)
-          Padding(
-            padding: const EdgeInsets.only(top: 8),
-            child: Text(
-              'Selecione pelo menos um tipo de refeição',
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.error,
-                fontSize: 12,
-              ),
-            ),
-          ),
-      ],
-    );
-  }
-
-  Widget _buildObservacoesSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Observações Adicionais',
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const SizedBox(height: 8),
-        TextFormField(
-          controller: _observacoesController,
-          decoration: const InputDecoration(
-            hintText: 'Ex: Preferências, ingredientes específicos, etc.',
-            border: OutlineInputBorder(),
-          ),
-          maxLines: 3,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildBotoesAcao(BuildContext context, MenuState menuState, MenuViewModel menuViewModel) {
-    return Column(
-      children: [
-        if (menuState.errorMessage != null)
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(12),
-            margin: const EdgeInsets.only(bottom: 16),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.errorContainer,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.error_outline,
-                  color: Theme.of(context).colorScheme.onErrorContainer,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    menuState.errorMessage!,
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.onErrorContainer,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        
-        SizedBox(
-          width: double.infinity,
-          child: ElevatedButton(
-            onPressed: menuState.isGeneratingMenu ? null : () => _gerarCardapio(menuViewModel),
-            style: ElevatedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 16),
-            ),
-            child: menuState.isGeneratingMenu
-                ? const Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      ),
-                      SizedBox(width: 12),
-                      Text('Gerando cardápio...'),
-                    ],
-                  )
-                : const Text(
-                    'Gerar Cardápio',
-                    style: TextStyle(fontSize: 16),
-                  ),
-          ),
-        ),
-        
-        const SizedBox(height: 12),
-        
-        SizedBox(
-          width: double.infinity,
-          child: OutlinedButton(
-            onPressed: () => Navigator.of(context).pop(),
-            style: OutlinedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 16),
-            ),
-            child: const Text(
-              'Cancelar',
-              style: TextStyle(fontSize: 16),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
 
   void _gerarCardapio(MenuViewModel menuViewModel) async {
     if (!_formKey.currentState!.validate()) {

@@ -3,6 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../di.dart';
 import 'shopping_list_viewmodel.dart';
 import '../../../../domain/models/shopping_list.dart';
+import 'widgets/lista_info_basica_widget.dart';
+import 'widgets/item_lista_card_widget.dart';
+import 'widgets/adicionar_item_dialog.dart';
 
 class CreateShoppingListPage extends ConsumerStatefulWidget {
   const CreateShoppingListPage({super.key});
@@ -16,19 +19,11 @@ class _CreateShoppingListPageState extends ConsumerState<CreateShoppingListPage>
   final _nomeController = TextEditingController();
   final _observacoesController = TextEditingController();
   final List<ShoppingItem> _itens = [];
-  final _itemNomeController = TextEditingController();
-  final _itemQuantidadeController = TextEditingController();
-  final _itemCategoriaController = TextEditingController();
-  final _itemObservacoesController = TextEditingController();
 
   @override
   void dispose() {
     _nomeController.dispose();
     _observacoesController.dispose();
-    _itemNomeController.dispose();
-    _itemQuantidadeController.dispose();
-    _itemCategoriaController.dispose();
-    _itemObservacoesController.dispose();
     super.dispose();
   }
 
@@ -55,71 +50,35 @@ class _CreateShoppingListPageState extends ConsumerState<CreateShoppingListPage>
       ),
       body: Form(
         key: _formKey,
-        child: Column(
-          children: [
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildBasicInfoSection(),
-                    const SizedBox(height: 24),
-                    _buildItensSection(),
-                  ],
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: ListaInfoBasicaWidget(
+                        nomeController: _nomeController,
+                        observacoesController: _observacoesController,
+                      ),
                 ),
               ),
-            ),
-            _buildAddItemSection(),
-          ],
+              const SizedBox(height: 24),
+              _buildItensSection(),
+              const SizedBox(height: 80), // Espaço para o FAB
+            ],
+          ),
         ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _mostrarDialogAdicionarItem,
+        child: const Icon(Icons.add),
       ),
     );
   }
 
-  Widget _buildBasicInfoSection() {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Informações Básicas',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _nomeController,
-              decoration: const InputDecoration(
-                labelText: 'Nome da Lista *',
-                hintText: 'Ex: Compras da semana',
-                border: OutlineInputBorder(),
-              ),
-              validator: (value) {
-                if (value == null || value.trim().isEmpty) {
-                  return 'Nome é obrigatório';
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _observacoesController,
-              decoration: const InputDecoration(
-                labelText: 'Observações',
-                hintText: 'Observações adicionais sobre a lista',
-                border: OutlineInputBorder(),
-              ),
-              maxLines: 3,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+
 
   Widget _buildItensSection() {
     return Card(
@@ -164,7 +123,7 @@ class _CreateShoppingListPageState extends ConsumerState<CreateShoppingListPage>
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Use o formulário abaixo para adicionar itens',
+                      'Toque no botão + para adicionar itens',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
@@ -173,36 +132,17 @@ class _CreateShoppingListPageState extends ConsumerState<CreateShoppingListPage>
                 ),
               )
             else
-              ListView.separated(
+              ListView.builder(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 itemCount: _itens.length,
-                separatorBuilder: (context, index) => const Divider(),
                 itemBuilder: (context, index) {
                   final item = _itens[index];
-                  return ListTile(
-                    leading: CircleAvatar(
-                      backgroundColor: Theme.of(context).colorScheme.secondaryContainer,
-                      child: Icon(
-                        Icons.shopping_basket,
-                        color: Theme.of(context).colorScheme.onSecondaryContainer,
-                      ),
-                    ),
-                    title: Text(item.nome),
-                    subtitle: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Quantidade: ${item.quantidade}'),
-                        if (item.categoria?.isNotEmpty == true)
-                          Text('Categoria: ${item.categoria}'),
-                        if (item.observacoes?.isNotEmpty == true)
-                          Text('Obs: ${item.observacoes}'),
-                      ],
-                    ),
-                    trailing: IconButton(
-                      icon: const Icon(Icons.delete, color: Colors.red),
-                      onPressed: () => _removerItem(index),
-                    ),
+                  return ItemListaCardWidget(
+                    item: item,
+                    index: index,
+                    onRemover: () => _removerItem(index),
+                    isEditable: false,
                   );
                 },
               ),
@@ -212,128 +152,25 @@ class _CreateShoppingListPageState extends ConsumerState<CreateShoppingListPage>
     );
   }
 
-  Widget _buildAddItemSection() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        border: Border(
-          top: BorderSide(
-            color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
-          ),
-        ),
-      ),
-      child: ExpansionTile(
-        title: const Text('Adicionar Item'),
-        leading: const Icon(Icons.add),
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      flex: 2,
-                      child: TextFormField(
-                        controller: _itemNomeController,
-                        decoration: const InputDecoration(
-                          labelText: 'Nome do Item *',
-                          hintText: 'Ex: Arroz',
-                          border: OutlineInputBorder(),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: TextFormField(
-                        controller: _itemQuantidadeController,
-                        decoration: const InputDecoration(
-                          labelText: 'Quantidade *',
-                          hintText: 'Ex: 1kg',
-                          border: OutlineInputBorder(),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextFormField(
-                        controller: _itemCategoriaController,
-                        decoration: const InputDecoration(
-                          labelText: 'Categoria',
-                          hintText: 'Ex: Grãos',
-                          border: OutlineInputBorder(),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: TextFormField(
-                        controller: _itemObservacoesController,
-                        decoration: const InputDecoration(
-                          labelText: 'Observações',
-                          hintText: 'Ex: Marca específica',
-                          border: OutlineInputBorder(),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                SizedBox(
-                  width: double.infinity,
-                  child: FilledButton.icon(
-                    onPressed: _adicionarItem,
-                    icon: const Icon(Icons.add),
-                    label: const Text('Adicionar Item'),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
+
+
+  void _mostrarDialogAdicionarItem() {
+    showDialog(
+      context: context,
+      builder: (context) => AdicionarItemDialog(
+        onSalvar: _adicionarItem,
       ),
     );
   }
 
-  void _adicionarItem() {
-    final nome = _itemNomeController.text.trim();
-    final quantidade = _itemQuantidadeController.text.trim();
-    final categoria = _itemCategoriaController.text.trim();
-    final observacoes = _itemObservacoesController.text.trim();
-
-    if (nome.isEmpty || quantidade.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Nome e quantidade são obrigatórios'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
-
-    final novoItem = ShoppingItem(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      nome: nome,
-      quantidade: quantidade,
-      categoria: categoria.isEmpty ? null : categoria,
-      observacoes: observacoes.isEmpty ? null : observacoes,
-    );
-
+  void _adicionarItem(ShoppingItem item) {
     setState(() {
-      _itens.add(novoItem);
-      _itemNomeController.clear();
-      _itemQuantidadeController.clear();
-      _itemCategoriaController.clear();
-      _itemObservacoesController.clear();
+      _itens.add(item);
     });
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Item "$nome" adicionado!'),
+        content: Text('Item "${item.nome}" adicionado!'),
         backgroundColor: Theme.of(context).colorScheme.primary,
       ),
     );

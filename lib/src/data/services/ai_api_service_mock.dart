@@ -1,4 +1,5 @@
 import 'package:result_dart/result_dart.dart';
+import '../../core/extensions/date_extensions.dart';
 import '../../domain/models/menu.dart';
 import '../../domain/models/perfil_familiar.dart';
 import '../../domain/models/refeicao.dart';
@@ -99,7 +100,7 @@ class AiApiServiceMock implements AiApiService {
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       nome: nome?.trim().isNotEmpty == true 
           ? nome! 
-          : 'Cardápio Gerado - ${_formatarData(DateTime.now())}',
+          : 'Cardápio Gerado - ${DateTime.now().formatarDataBrasileira()}',
       dataCriacao: DateTime.now(),
       refeicoesPorDia: refeicoesPorDia,
       observacoes: _adicionarObservacoesPerfil(perfil, observacoesAdicionais),
@@ -221,10 +222,7 @@ class AiApiServiceMock implements AiApiService {
     return observacoes.isNotEmpty ? observacoes.join('. ') : null;
   }
 
-  /// Formata data para nome do menu
-  String _formatarData(DateTime data) {
-    return '${data.day.toString().padLeft(2, '0')}/${data.month.toString().padLeft(2, '0')}';
-  }
+
 
   /// Cria uma lista de compras mock baseada no menu
   ShoppingList _criarListaComprasMock({

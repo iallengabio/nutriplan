@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/extensions/date_extensions.dart';
 import '../../../../di.dart';
 import '../../../../domain/models/menu.dart';
 import '../../home/cardapios/menu_viewmodel.dart';
@@ -179,7 +180,7 @@ class _CreateShoppingListFromMenuPageState extends ConsumerState<CreateShoppingL
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Criado em ${_formatarData(menu.dataCriacao)}',
+                            'Criado em ${menu.dataCriacao.formatarDataBrasileira()}',
                             style: Theme.of(context).textTheme.bodySmall,
                           ),
                           Text(
@@ -379,9 +380,7 @@ class _CreateShoppingListFromMenuPageState extends ConsumerState<CreateShoppingL
     );
   }
 
-  String _formatarData(DateTime data) {
-    return '${data.day.toString().padLeft(2, '0')}/${data.month.toString().padLeft(2, '0')}/${data.year}';
-  }
+
 
   Future<void> _gerarListaDeCompras() async {
     if (!_formKey.currentState!.validate() || _menuSelecionado == null) {
