@@ -10,6 +10,277 @@ import '../shopping/pages/create_shopping_list_from_menu_page.dart';
 
 import '../settings/settings_page.dart';
 
+
+
+class FloatingActionButtonMenu extends ConsumerWidget {
+  final bool isFabMenuOpen;
+  final Animation<double> fabAnimation;
+  final Animation<double> fabRotationAnimation;
+  final VoidCallback onToggleFabMenu;
+  final VoidCallback onCloseFabMenu;
+  final Function(HomeViewModel) onShowNovaListaDialog;
+  final Function(HomeViewModel) onShowNovoCardapioDialog;
+
+  const FloatingActionButtonMenu({
+    super.key,
+    required this.isFabMenuOpen,
+    required this.fabAnimation,
+    required this.fabRotationAnimation,
+    required this.onToggleFabMenu,
+    required this.onCloseFabMenu,
+    required this.onShowNovaListaDialog,
+    required this.onShowNovoCardapioDialog,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final homeViewModel = ref.read(homeViewModelProvider.notifier);
+    
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        // Menu items
+        AnimatedBuilder(
+          animation: fabAnimation,
+          builder: (context, child) {
+            return Transform.scale(
+              scale: fabAnimation.value,
+              child: Opacity(
+                opacity: fabAnimation.value,
+                child: Visibility(
+                  visible: fabAnimation.value > 0,
+                  child: Container(
+                    margin: const EdgeInsets.only(bottom: 16),
+                    child: FloatingActionButton.extended(
+                      heroTag: "fab_lista",
+                      onPressed: () {
+                        onCloseFabMenu();
+                        onShowNovaListaDialog(homeViewModel);
+                      },
+                      icon: const Icon(Icons.shopping_cart),
+                      label: const Text('Lista'),
+                      backgroundColor: Theme.of(context).colorScheme.tertiary,
+                      foregroundColor: Theme.of(context).colorScheme.onTertiary,
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+        AnimatedBuilder(
+          animation: fabAnimation,
+          builder: (context, child) {
+            return Transform.scale(
+              scale: fabAnimation.value,
+              child: Opacity(
+                opacity: fabAnimation.value,
+                child: Visibility(
+                  visible: fabAnimation.value > 0,
+                  child: Container(
+                    margin: const EdgeInsets.only(bottom: 16),
+                    child: FloatingActionButton.extended(
+                      heroTag: "fab_cardapio",
+                      onPressed: () {
+                        onCloseFabMenu();
+                        onShowNovoCardapioDialog(homeViewModel);
+                      },
+                      icon: const Icon(Icons.restaurant_menu),
+                      label: const Text('Cardápio'),
+                      backgroundColor: Theme.of(context).colorScheme.secondary,
+                      foregroundColor: Theme.of(context).colorScheme.onSecondary,
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+        // Main FAB
+        AnimatedBuilder(
+          animation: fabRotationAnimation,
+          builder: (context, child) {
+            return Transform.rotate(
+              angle: fabRotationAnimation.value * 2 * 3.14159,
+              child: FloatingActionButton(
+                heroTag: "main_fab",
+                onPressed: onToggleFabMenu,
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                child: Icon(
+                  isFabMenuOpen ? Icons.close : Icons.add,
+                ),
+              ),
+            );
+          },
+        ),
+      ],
+    );
+  }
+}
+
+class CustomBottomNavigationBar extends StatelessWidget {
+  final int currentIndex;
+  final Animation<double> tabIndicatorAnimation;
+  final PageController pageController;
+
+  const CustomBottomNavigationBar({
+    super.key,
+    required this.currentIndex,
+    required this.tabIndicatorAnimation,
+    required this.pageController,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    const tabItems = [
+      {'icon': Icons.restaurant_menu, 'label': 'Cardápios'},
+      {'icon': Icons.shopping_cart, 'label': 'Listas'},
+    ];
+
+    const double barHeight = 85;
+    const double indicatorHeight = 32;
+
+    return Container(
+      height: barHeight,
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 10,
+            offset: const Offset(0, -2),
+          ),
+        ],
+      ),
+      child: Stack(
+        children: [
+          // Indicador animado
+          AnimatedBuilder(
+            animation: tabIndicatorAnimation,
+            builder: (context, child) {
+              return AnimatedPositioned(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOutCubic,
+                left: (currentIndex * (MediaQuery.of(context).size.width / 2)) + 
+                       (MediaQuery.of(context).size.width / 4) - 25,
+                 top: (barHeight / 2) - (indicatorHeight / 2) - 8, // Alinha com o centro dos ícones
+                child: Transform.scale(
+                  scale: 0.8 + (0.2 * tabIndicatorAnimation.value),
+                  child: Container(
+                    width: 50,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+          // Itens da navegação
+          Row(
+            children: List.generate(tabItems.length, (index) {
+              final item = tabItems[index];
+              final isSelected = currentIndex == index;
+              
+              return Expanded(
+                child: GestureDetector(
+                  onTap: () {
+                    if (currentIndex != index) {
+                      pageController.animateToPage(
+                        index,
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeInOut,
+                      );
+                    }
+                  },
+                  child: Container(
+                    height: barHeight,
+                    color: Colors.transparent,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                           padding: const EdgeInsets.all(8),
+                           child: Icon(
+                             item['icon'] as IconData,
+                             color: isSelected 
+                                 ? Theme.of(context).colorScheme.primary
+                                 : Theme.of(context).colorScheme.onSurfaceVariant,
+                             size: 24,
+                           ),
+                         ),
+                        const SizedBox(height: 4),
+                        AnimatedDefaultTextStyle(
+                           duration: const Duration(milliseconds: 200),
+                           style: TextStyle(
+                             fontSize: 11,
+                             fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                             color: isSelected 
+                                 ? Theme.of(context).colorScheme.primary
+                                 : Theme.of(context).colorScheme.onSurfaceVariant,
+                           ),
+                           child: Text(item['label'] as String),
+                         ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class NovaListaDialog extends StatelessWidget {
+  const NovaListaDialog({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Nova Lista de Compras'),
+      content: const Text('Como você gostaria de criar a lista?'),
+      actions: [
+        TextButton(
+          onPressed: () {
+            Navigator.of(context).pop();
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => const CreateShoppingListFromMenuPage(),
+              ),
+            );
+          },
+          child: const Text('Baseada em Cardápio'),
+        ),
+        TextButton(
+          onPressed: () {
+            Navigator.of(context).pop();
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => const CreateShoppingListPage(),
+              ),
+            );
+          },
+          child: const Text('Lista Manual'),
+        ),
+      ],
+    );
+  }
+
+  static void show(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => const NovaListaDialog(),
+    );
+  }
+}
+
 class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
 
@@ -55,91 +326,7 @@ class _HomePageState extends ConsumerState<HomePage> with TickerProviderStateMix
     });
   }
 
-  Widget _buildFabWithMenu() {
-    final homeViewModel = ref.read(homeViewModelProvider.notifier);
-    
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.end,
-      children: [
-        // Menu items
-        AnimatedBuilder(
-          animation: _fabAnimation,
-          builder: (context, child) {
-            return Transform.scale(
-              scale: _fabAnimation.value,
-              child: Opacity(
-                opacity: _fabAnimation.value,
-                child: Visibility(
-                  visible: _fabAnimation.value > 0,
-                  child: Container(
-                    margin: const EdgeInsets.only(bottom: 16),
-                    child: FloatingActionButton.extended(
-                      heroTag: "fab_lista",
-                      onPressed: () {
-                        _closeFabMenu();
-                        _showNovaListaDialog(homeViewModel);
-                      },
-                      icon: const Icon(Icons.shopping_cart),
-                      label: const Text('Lista'),
-                      backgroundColor: Theme.of(context).colorScheme.tertiary,
-                      foregroundColor: Theme.of(context).colorScheme.onTertiary,
-                    ),
-                  ),
-                ),
-              ),
-            );
-          },
-        ),
-        AnimatedBuilder(
-          animation: _fabAnimation,
-          builder: (context, child) {
-            return Transform.scale(
-              scale: _fabAnimation.value,
-              child: Opacity(
-                opacity: _fabAnimation.value,
-                child: Visibility(
-                  visible: _fabAnimation.value > 0,
-                  child: Container(
-                    margin: const EdgeInsets.only(bottom: 16),
-                    child: FloatingActionButton.extended(
-                      heroTag: "fab_cardapio",
-                      onPressed: () {
-                        _closeFabMenu();
-                        _showNovoCardapioDialog(homeViewModel);
-                      },
-                      icon: const Icon(Icons.restaurant_menu),
-                      label: const Text('Cardápio'),
-                      backgroundColor: Theme.of(context).colorScheme.secondary,
-                      foregroundColor: Theme.of(context).colorScheme.onSecondary,
-                    ),
-                  ),
-                ),
-              ),
-            );
-          },
-        ),
-        // Main FAB
-        AnimatedBuilder(
-          animation: _fabRotationAnimation,
-          builder: (context, child) {
-            return Transform.rotate(
-              angle: _fabRotationAnimation.value * 2 * 3.14159,
-              child: FloatingActionButton(
-                heroTag: "main_fab",
-                onPressed: _toggleFabMenu,
-                backgroundColor: Theme.of(context).colorScheme.primary,
-                foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                child: Icon(
-                  _isFabMenuOpen ? Icons.close : Icons.add,
-                ),
-              ),
-            );
-          },
-        ),
-      ],
-    );
-  }
+
 
   @override
   void dispose() {
@@ -186,109 +373,7 @@ class _HomePageState extends ConsumerState<HomePage> with TickerProviderStateMix
     _autoCloseTimer = null;
   }
 
-  Widget _buildCustomBottomNavigationBar() {
-    const tabItems = [
-      {'icon': Icons.restaurant_menu, 'label': 'Cardápios'},
-      {'icon': Icons.shopping_cart, 'label': 'Listas'},
-    ];
 
-    const double barHeight = 85;
-    const double indicatorHeight = 32;
-
-    return Container(
-      height: barHeight,
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
-            blurRadius: 10,
-            offset: const Offset(0, -2),
-          ),
-        ],
-      ),
-      child: Stack(
-        children: [
-          // Indicador animado
-          AnimatedBuilder(
-            animation: _tabIndicatorAnimation,
-            builder: (context, child) {
-              return AnimatedPositioned(
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeInOutCubic,
-                left: (_currentIndex * (MediaQuery.of(context).size.width / 2)) + 
-                       (MediaQuery.of(context).size.width / 4) - 25,
-                 top: (barHeight / 2) - (indicatorHeight / 2) - 8, // Alinha com o centro dos ícones
-                child: Transform.scale(
-                  scale: 0.8 + (0.2 * _tabIndicatorAnimation.value),
-                  child: Container(
-                    width: 50,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                  ),
-                ),
-              );
-            },
-          ),
-          // Itens da navegação
-          Row(
-            children: List.generate(tabItems.length, (index) {
-              final item = tabItems[index];
-              final isSelected = _currentIndex == index;
-              
-              return Expanded(
-                child: GestureDetector(
-                  onTap: () {
-                    if (_currentIndex != index) {
-                      _pageController.animateToPage(
-                        index,
-                        duration: const Duration(milliseconds: 300),
-                        curve: Curves.easeInOut,
-                      );
-                    }
-                  },
-                  child: Container(
-                    height: barHeight,
-                    color: Colors.transparent,
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(
-                           padding: const EdgeInsets.all(8),
-                           child: Icon(
-                             item['icon'] as IconData,
-                             color: isSelected 
-                                 ? Theme.of(context).colorScheme.primary
-                                 : Theme.of(context).colorScheme.onSurfaceVariant,
-                             size: 24,
-                           ),
-                         ),
-                        const SizedBox(height: 4),
-                        AnimatedDefaultTextStyle(
-                           duration: const Duration(milliseconds: 200),
-                           style: TextStyle(
-                             fontSize: 11,
-                             fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                             color: isSelected 
-                                 ? Theme.of(context).colorScheme.primary
-                                 : Theme.of(context).colorScheme.onSurfaceVariant,
-                           ),
-                           child: Text(item['label'] as String),
-                         ),
-                      ],
-                    ),
-                  ),
-                ),
-              );
-            }),
-          ),
-        ],
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -330,8 +415,20 @@ class _HomePageState extends ConsumerState<HomePage> with TickerProviderStateMix
           ],
         ),
       ),
-      floatingActionButton: _buildFabWithMenu(),
-      bottomNavigationBar: _buildCustomBottomNavigationBar(),
+      floatingActionButton: FloatingActionButtonMenu(
+        isFabMenuOpen: _isFabMenuOpen,
+        fabAnimation: _fabAnimation,
+        fabRotationAnimation: _fabRotationAnimation,
+        onToggleFabMenu: _toggleFabMenu,
+        onCloseFabMenu: _closeFabMenu,
+        onShowNovaListaDialog: (homeViewModel) => NovaListaDialog.show(context),
+        onShowNovoCardapioDialog: _showNovoCardapioDialog,
+      ),
+      bottomNavigationBar: CustomBottomNavigationBar(
+        currentIndex: _currentIndex,
+        tabIndicatorAnimation: _tabIndicatorAnimation,
+        pageController: _pageController,
+      ),
     );
   }
 
@@ -355,39 +452,7 @@ class _HomePageState extends ConsumerState<HomePage> with TickerProviderStateMix
 
 
 
-  void _showNovaListaDialog(HomeViewModel homeViewModel) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Nova Lista de Compras'),
-        content: const Text('Como você gostaria de criar a lista?'),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => const CreateShoppingListFromMenuPage(),
-                ),
-              );
-            },
-            child: const Text('Baseada em Cardápio'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => const CreateShoppingListPage(),
-                ),
-              );
-            },
-            child: const Text('Lista Manual'),
-          ),
-        ],
-      ),
-    );
-  }
+
 
 
 }
