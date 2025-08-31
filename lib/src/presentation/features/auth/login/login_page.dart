@@ -14,8 +14,6 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  bool _obscurePassword = true;
-  bool _rememberMe = false;
 
   @override
   void dispose() {
@@ -39,7 +37,6 @@ class _LoginPageState extends ConsumerState<LoginPage> {
             backgroundColor: Theme.of(context).colorScheme.primary,
           ),
         );
-        // TODO: Implementar navegação para home
       } else if (next is LoginError) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -68,36 +65,46 @@ class _LoginPageState extends ConsumerState<LoginPage> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const SizedBox(height: 60),
-                
+
                 // Logo e título
-                _buildHeader(),
-                
+                const HeaderWidget(),
+
                 const SizedBox(height: 48),
-                
+
                 // Campos de entrada
-                _buildEmailField(loginViewModel),
+                EmailField(
+                  controller: _emailController,
+                  viewModel: loginViewModel,
+                ),
                 const SizedBox(height: 16),
-                _buildPasswordField(loginViewModel),
-                
+                PasswordField(
+                  controller: _passwordController,
+                  viewModel: loginViewModel,
+                ),
+
                 const SizedBox(height: 12),
-                
+
                 // Lembrar-me e Esqueci a senha
-                _buildRememberAndForgot(loginViewModel),
-                
+                RememberAndForgotWidget(emailController: _emailController),
+
                 const SizedBox(height: 32),
-                
+
                 // Botão de login
-                _buildLoginButton(loginState, loginViewModel),
-                
+                LoginButton(
+                  formKey: _formKey,
+                  emailController: _emailController,
+                  passwordController: _passwordController,
+                ),
+
                 const SizedBox(height: 24),
-                
+
                 // Divisor
-                _buildDivider(),
-                
+                const DividerWidget(),
+
                 const SizedBox(height: 24),
-                
+
                 // Link para registro
-                _buildRegisterLink(),
+                const RegisterLinkWidget(),
               ],
             ),
           ),
@@ -105,42 +112,54 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       ),
     );
   }
+}
 
-  Widget _buildHeader() {
+/// Widget para o cabeçalho da tela de login
+class HeaderWidget extends StatelessWidget {
+  const HeaderWidget({super.key});
+
+  @override
+  Widget build(BuildContext context) {
     return Column(
       children: [
         Container(
           width: 80,
           height: 80,
-          decoration: BoxDecoration(
-            // color: Theme.of(context).primaryColor,
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: const Icon(
-            Icons.restaurant_menu,
-            size: 40,
-          ),
+          decoration: BoxDecoration(borderRadius: BorderRadius.circular(20)),
+          child: const Icon(Icons.restaurant_menu, size: 40),
         ),
         const SizedBox(height: 24),
         Text(
           'NutriPlan',
-          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
+          style: Theme.of(
+            context,
+          ).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 8),
         Text(
           'Bem-vindo de volta!',
-          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-          ),
+          style: Theme.of(context).textTheme.bodyLarge,
         ),
       ],
     );
   }
+}
 
-  Widget _buildEmailField(LoginViewModel viewModel) {
+/// Widget para o campo de email
+class EmailField extends StatelessWidget {
+  final TextEditingController controller;
+  final LoginViewModel viewModel;
+
+  const EmailField({
+    super.key,
+    required this.controller,
+    required this.viewModel,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     return TextFormField(
-      controller: _emailController,
+      controller: controller,
       keyboardType: TextInputType.emailAddress,
       textInputAction: TextInputAction.next,
       validator: viewModel.validateEmail,
@@ -148,27 +167,43 @@ class _LoginPageState extends ConsumerState<LoginPage> {
         labelText: 'Email',
         hintText: 'Digite seu email',
         prefixIcon: const Icon(Icons.email_outlined),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          // borderSide: BorderSide(color: Theme.of(context).primaryColor),
         ),
       ),
     );
   }
+}
 
-  Widget _buildPasswordField(LoginViewModel viewModel) {
+/// Widget para o campo de senha
+class PasswordField extends StatefulWidget {
+  final TextEditingController controller;
+  final LoginViewModel viewModel;
+
+  const PasswordField({
+    super.key,
+    required this.controller,
+    required this.viewModel,
+  });
+
+  @override
+  State<PasswordField> createState() => _PasswordFieldState();
+}
+
+class _PasswordFieldState extends State<PasswordField> {
+  bool _obscurePassword = true;
+
+  @override
+  Widget build(BuildContext context) {
     return TextFormField(
-      controller: _passwordController,
+      controller: widget.controller,
       obscureText: _obscurePassword,
       textInputAction: TextInputAction.done,
-      validator: viewModel.validatePassword,
-      onFieldSubmitted: (_) => _handleLogin(viewModel),
+      validator: widget.viewModel.validatePassword,
       decoration: InputDecoration(
         labelText: 'Senha',
         hintText: 'Digite sua senha',
@@ -183,168 +218,175 @@ class _LoginPageState extends ConsumerState<LoginPage> {
             });
           },
         ),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          // borderSide: BorderSide(color: Theme.of(context).primaryColor),
         ),
       ),
     );
   }
+}
 
-  Widget _buildRememberAndForgot(LoginViewModel viewModel) {
-    return Row(
-      children: [
-        Checkbox(
-          value: _rememberMe,
-          onChanged: (value) {
-            setState(() {
-              _rememberMe = value ?? false;
-            });
-          },
-        ),
-        const Text('Lembrar-me'),
-        const Spacer(),
-        TextButton(
-          onPressed: () => _showForgotPasswordDialog(viewModel),
-          child: Text(
-            'Esqueci a senha',
+/// Widget para o botão de login
+class LoginButton extends ConsumerWidget {
+  final GlobalKey<FormState> formKey;
+  final TextEditingController emailController;
+  final TextEditingController passwordController;
+
+  const LoginButton({
+    super.key,
+    required this.formKey,
+    required this.emailController,
+    required this.passwordController,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final loginState = ref.watch(loginViewModelProvider);
+    final viewModel = ref.read(loginViewModelProvider.notifier);
+    final isLoading = loginState is LoginLoading;
+
+    return SizedBox(
+      width: double.infinity,
+      height: 50,
+      child: ElevatedButton(
+        onPressed: isLoading
+            ? null
+            : () async {
+                if (formKey.currentState?.validate() ?? false) {
+                  await viewModel.executeLogin(
+                    LoginCommand(
+                      email: emailController.text,
+                      password: passwordController.text,
+                    ),
+                  );
+                }
+              },
+        style: ElevatedButton.styleFrom(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
           ),
         ),
-      ],
+        child: isLoading
+            ? const SizedBox(
+                height: 20,
+                width: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : const Text(
+                'Entrar',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              ),
+      ),
     );
   }
+}
 
-  Widget _buildLoginButton(LoginState state, LoginViewModel viewModel) {
-    final isLoading = state is LoginLoading;
-    
-    return ElevatedButton(
-      onPressed: isLoading ? null : () => _handleLogin(viewModel),
-      style: ElevatedButton.styleFrom(
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        elevation: 2,
-      ),
-      child: isLoading
-          ? const SizedBox(
-              height: 20,
-              width: 20,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                // valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-              ),
-            )
-          : const Text(
-              'Entrar',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
+/// Widget para lembrar senha e esqueci senha
+class RememberAndForgotWidget extends ConsumerStatefulWidget {
+  final TextEditingController emailController;
+
+  const RememberAndForgotWidget({super.key, required this.emailController});
+
+  @override
+  ConsumerState<RememberAndForgotWidget> createState() =>
+      _RememberAndForgotWidgetState();
+}
+
+class _RememberAndForgotWidgetState
+    extends ConsumerState<RememberAndForgotWidget> {
+  bool _rememberMe = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Row(
+          children: [
+            Checkbox(
+              value: _rememberMe,
+              onChanged: (value) {
+                setState(() {
+                  _rememberMe = value ?? false;
+                });
+              },
             ),
-    );
-  }
-
-  Widget _buildDivider() {
-    return Row(
-      children: [
-        Expanded(child: Divider(color: Theme.of(context).colorScheme.outline)),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Text(
-            'ou',
-            style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
-          ),
+            const Text('Lembrar-me'),
+          ],
         ),
-        Expanded(child: Divider(color: Theme.of(context).colorScheme.outline)),
+        TextButton(
+          onPressed: () async {
+            if (widget.emailController.text.isNotEmpty) {
+              final viewModel = ref.read(loginViewModelProvider.notifier);
+              await viewModel.executeForgotPassword(
+                ForgotPasswordCommand(widget.emailController.text),
+              );
+
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Email de recuperação enviado!'),
+                  ),
+                );
+              }
+            } else {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Digite seu email primeiro')),
+              );
+            }
+          },
+          child: const Text('Esqueci minha senha'),
+        ),
       ],
     );
   }
+}
 
-  Widget _buildRegisterLink() {
+/// Widget para link de registro
+class RegisterLinkWidget extends StatelessWidget {
+  const RegisterLinkWidget({super.key});
+
+  @override
+  Widget build(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Text(
-          'Não tem uma conta? ',
-        ),
+        const Text('Não tem uma conta? '),
         TextButton(
           onPressed: () {
             Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (context) => const RegisterPage(),
-              ),
+              MaterialPageRoute(builder: (context) => const RegisterPage()),
             );
           },
-          child: Text(
+          child: const Text(
             'Cadastre-se',
-            style: TextStyle(
-              color: Theme.of(context).colorScheme.onSurface,
-              fontWeight: FontWeight.w600,
-            ),
+            style: TextStyle(fontWeight: FontWeight.w600),
           ),
         ),
       ],
     );
   }
+}
 
-  void _handleLogin(LoginViewModel viewModel) {
-    if (_formKey.currentState?.validate() ?? false) {
-      final command = LoginCommand(
-        email: _emailController.text.trim(),
-        password: _passwordController.text,
-      );
-      viewModel.executeLogin(command);
-    }
-  }
+/// Widget para divisor com texto
+class DividerWidget extends StatelessWidget {
+  const DividerWidget({super.key});
 
-  void _showForgotPasswordDialog(LoginViewModel viewModel) {
-    final emailController = TextEditingController();
-    
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Recuperar Senha'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text(
-              'Digite seu email para receber as instruções de recuperação de senha.',
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: emailController,
-              keyboardType: TextInputType.emailAddress,
-              decoration: const InputDecoration(
-                labelText: 'Email',
-                border: OutlineInputBorder(),
-              ),
-            ),
-          ],
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        const Expanded(child: Divider()),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Text('ou', style: Theme.of(context).textTheme.bodyMedium),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancelar'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              if (emailController.text.isNotEmpty) {
-                final command = ForgotPasswordCommand(emailController.text.trim());
-                viewModel.executeForgotPassword(command);
-                Navigator.of(context).pop();
-              }
-            },
-            child: const Text('Enviar'),
-          ),
-        ],
-      ),
+        const Expanded(child: Divider()),
+      ],
     );
   }
 }

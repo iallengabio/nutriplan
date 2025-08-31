@@ -5,6 +5,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'firebase_options.dart';
 import 'src/app.dart';
 import 'src/di.dart';
+import 'src/core/theme/app_theme.dart';
 import 'src/domain/models/settings.dart' as settings_model;
 import 'src/presentation/features/settings/settings_state.dart';
 
@@ -22,81 +23,6 @@ void main() async {
 
 class MyApp extends ConsumerWidget {
   const MyApp({super.key});
-
-  ThemeData _buildLightTheme() {
-    final colorScheme = ColorScheme.fromSeed(
-      seedColor: Colors.green,
-      brightness: Brightness.light,
-    );
-    
-    return ThemeData(
-      
-      colorScheme: colorScheme,
-      useMaterial3: true,
-      appBarTheme: const AppBarTheme(
-        centerTitle: true,
-        elevation: 0,
-      ),
-      elevatedButtonTheme: ElevatedButtonThemeData(
-        style: ElevatedButton.styleFrom(
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-      ),
-      inputDecorationTheme: InputDecorationTheme(
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: colorScheme.outline),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: colorScheme.primary),
-        ),
-      ),
-    );
-  }
-
-  ThemeData _buildDarkTheme() {
-    final colorScheme = ColorScheme.fromSeed(
-      seedColor: Colors.green,
-      brightness: Brightness.dark,
-    );
-    
-    return ThemeData(
-      colorScheme: colorScheme,
-      useMaterial3: true,
-      appBarTheme: const AppBarTheme(
-        centerTitle: true,
-        elevation: 0,
-      ),
-      elevatedButtonTheme: ElevatedButtonThemeData(
-        style: ElevatedButton.styleFrom(
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-      ),
-      inputDecorationTheme: InputDecorationTheme(
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: colorScheme.outline),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: colorScheme.primary),
-        ),
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -121,8 +47,8 @@ class MyApp extends ConsumerWidget {
     
     return MaterialApp(
       title: 'NutriPlan',
-      theme: _buildLightTheme(),
-      darkTheme: _buildDarkTheme(),
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
       themeMode: themeMode,
       home: const AppWrapper(),
       debugShowCheckedModeBanner: false,
