@@ -5,6 +5,8 @@ import '../../../domain/models/settings.dart';
 import '../../../di.dart';
 import 'settings_state.dart';
 import 'widgets/api_usage_widget.dart';
+import 'widgets/theme_section_widget.dart';
+import 'widgets/user_actions_section_widget.dart';
 
 class SettingsPage extends ConsumerStatefulWidget {
   const SettingsPage({super.key});
@@ -55,21 +57,12 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
         title: const Text('Configurações'),
         centerTitle: true,
       ),
-      body: _buildBody(state),
-    );
-  }
-
-  Widget _buildBody(SettingsState state) {
-    switch (state) {
-      case SettingsInitial():
-      case SettingsLoading():
-        return const Center(
+      body: switch (state) {
+        SettingsInitial() || SettingsLoading() => const Center(
           child: CircularProgressIndicator(),
-        );
-      case SettingsLoaded(settings: final settings):
-        return _buildSettingsContent(settings);
-      case SettingsError(message: final message):
-        return Center(
+        ),
+        SettingsLoaded(settings: final settings) => _buildSettingsContent(settings),
+        SettingsError(message: final message) => Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -99,12 +92,12 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               ),
             ],
           ),
-        );
-      case SettingsSaved():
-        return _buildSettingsContent(
+        ),
+        SettingsSaved() => _buildSettingsContent(
           ref.read(settingsViewModelProvider.notifier).currentSettings ?? const Settings(),
-        );
-    }
+        ),
+      },
+    );
   }
 
   Widget _buildSettingsContent(Settings settings) {
@@ -113,157 +106,14 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        _buildThemeSection(settings),
+        ThemeSectionWidget(settings: settings),
         const SizedBox(height: 24),
         if (user != null) ...[
           const ApiUsageWidget(),
           const SizedBox(height: 24),
         ],
-        _buildActionsSection(),
+        const UserActionsSectionWidget(),
       ],
     );
   }
-
-  Widget _buildThemeSection(Settings settings) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(
-                  Icons.palette_outlined,
-                  color: Theme.of(context).primaryColor,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  'Aparência',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Tema do aplicativo',
-              style: Theme.of(context).textTheme.bodyLarge,
-            ),
-            const SizedBox(height: 8),
-            ...ThemeMode.values.map((mode) => RadioListTile<ThemeMode>(
-                  title: Text(mode.displayName),
-                  subtitle: Text(mode.description),
-                  value: mode,
-                  groupValue: settings.themeMode,
-                  onChanged: (value) {
-                    if (value != null) {
-                      ref.read(settingsViewModelProvider.notifier)
-                          .executeCommand(UpdateThemeCommand(value));
-                    }
-                  },
-                  contentPadding: EdgeInsets.zero,
-                )),
-          ],
-        ),
-      ),
-    );
-  }
-
-
-
-  Widget _buildActionsSection() {
-    final user = FirebaseAuth.instance.currentUser;
-    
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(
-                  Icons.person_outlined,
-                  color: Theme.of(context).primaryColor,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  'Usuário',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            if (user != null) ...[
-              ListTile(
-                leading: CircleAvatar(
-                  backgroundImage: user.photoURL != null 
-                    ? NetworkImage(user.photoURL!) 
-                    : null,
-                  child: user.photoURL == null 
-                    ? Text((user.displayName?.isNotEmpty == true ? user.displayName!.substring(0, 1).toUpperCase() : 'U'))
-                    : null,
-                ),
-                title: Text(user.displayName ?? 'Usuário'),
-                subtitle: Text(user.email ?? ''),
-                contentPadding: EdgeInsets.zero,
-              ),
-              const Divider(),
-            ],
-            ListTile(
-              leading: const Icon(Icons.logout, color: Colors.red),
-              title: const Text('Sair', style: TextStyle(color: Colors.red)),
-              subtitle: const Text('Fazer logout da aplicação'),
-              onTap: () {
-                _showLogoutDialog();
-              },
-              contentPadding: EdgeInsets.zero,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showLogoutDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Sair'),
-        content: const Text(
-          'Tem certeza que deseja sair da aplicação?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancelar'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              Navigator.of(context).pop(); // Fecha o diálogo
-              await FirebaseAuth.instance.signOut();
-              // Volta para a tela de login e remove todas as telas anteriores
-              if (mounted) {
-                Navigator.of(context).pushNamedAndRemoveUntil(
-                  '/',
-                  (route) => false,
-                );
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('Sair'),
-          ),
-        ],
-      ),
-    );
-  }
-
-
 }
