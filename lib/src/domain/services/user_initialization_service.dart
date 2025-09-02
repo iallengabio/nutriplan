@@ -1,6 +1,5 @@
 import 'package:result_dart/result_dart.dart';
 import '../models/user.dart';
-import '../models/perfil_familiar.dart';
 import '../repositories/family_profile_repository.dart';
 
 /// Serviço responsável pela inicialização de novos usuários
