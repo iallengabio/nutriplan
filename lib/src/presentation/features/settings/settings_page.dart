@@ -7,6 +7,7 @@ import 'settings_state.dart';
 import 'widgets/api_usage_widget.dart';
 import 'widgets/theme_section_widget.dart';
 import 'widgets/user_actions_section_widget.dart';
+import '../profile/family_profile_page.dart';
 
 class SettingsPage extends ConsumerStatefulWidget {
   const SettingsPage({super.key});
@@ -109,11 +110,34 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
         ThemeSectionWidget(settings: settings),
         const SizedBox(height: 24),
         if (user != null) ...[
+          _buildFamilyProfileSection(),
+          const SizedBox(height: 24),
           const ApiUsageWidget(),
           const SizedBox(height: 24),
         ],
-        const UserActionsSectionWidget(),
+        const UserActionsSectionWidget()
       ],
+    );
+  }
+
+  Widget _buildFamilyProfileSection() {
+    return Card(
+      child: ListTile(
+        leading: Icon(
+          Icons.family_restroom,
+          color: Theme.of(context).colorScheme.primary,
+        ),
+        title: const Text('Perfil Familiar'),
+        subtitle: const Text('Configure o perfil da sua família para cardápios personalizados'),
+        trailing: const Icon(Icons.arrow_forward_ios),
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => const FamilyProfilePage(),
+            ),
+          );
+        },
+      ),
     );
   }
 }

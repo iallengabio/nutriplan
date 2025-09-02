@@ -16,8 +16,13 @@ import 'core/constants/api_keys.dart';
 import 'domain/repositories/menu_repository.dart';
 import 'domain/repositories/shopping_list_repository.dart';
 import 'domain/services/ai_api_service.dart';
+import 'domain/services/user_initialization_service.dart';
 import 'presentation/features/home/cardapios/menu_viewmodel.dart';
 import 'presentation/features/home/listas/shopping_list_viewmodel.dart';
+import 'data/repositories/firebase_family_profile_repository.dart';
+import 'domain/repositories/family_profile_repository.dart';
+import 'presentation/features/profile/family_profile_viewmodel.dart';
+import 'presentation/features/auth/register/register_viewmodel.dart';
 
 // Provider do Firebase Auth
 final firebaseAuthProvider = Provider<FirebaseAuth>((ref) {
@@ -119,4 +124,33 @@ final shoppingListRepositoryProvider = Provider<ShoppingListRepository>((ref) {
 final shoppingListViewModelProvider = StateNotifierProvider<ShoppingListViewModel, ShoppingListState>((ref) {
   final repository = ref.read(shoppingListRepositoryProvider);
   return ShoppingListViewModel(repository);
+});
+
+// Provider do FamilyProfileRepository (usando Firebase)
+final familyProfileRepositoryProvider = Provider<FamilyProfileRepository>((ref) {
+  final firestore = ref.read(firestoreProvider);
+  final firebaseAuth = ref.read(firebaseAuthProvider);
+  return FirebaseFamilyProfileRepository(
+    firestore,
+    firebaseAuth,
+  );
+});
+
+// Provider do FamilyProfileViewModel
+final familyProfileViewModelProvider = StateNotifierProvider<FamilyProfileViewModel, FamilyProfileState>((ref) {
+  final repository = ref.read(familyProfileRepositoryProvider);
+  return FamilyProfileViewModel(repository);
+});
+
+// Provider do UserInitializationService
+final userInitializationServiceProvider = Provider<UserInitializationService>((ref) {
+  final familyProfileRepository = ref.read(familyProfileRepositoryProvider);
+  return UserInitializationServiceImpl(familyProfileRepository);
+});
+
+// Provider do RegisterViewModel
+final registerViewModelProvider = StateNotifierProvider<RegisterViewModel, RegisterState>((ref) {
+  final authRepository = ref.read(authRepositoryProvider);
+  final userInitializationService = ref.read(userInitializationServiceProvider);
+  return RegisterViewModel(authRepository, userInitializationService);
 });

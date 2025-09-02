@@ -7,12 +7,24 @@ part 'perfil_familiar.g.dart';
 class PerfilFamiliar with _$PerfilFamiliar {
   const factory PerfilFamiliar({
     required String id,
-    @Default(2) int numeroAdultos,
+    @Default(1) int numeroAdultos,
     @Default(0) int numeroCriancas,
     @Default({}) Set<RestricaoAlimentar> restricoesAlimentares,
     String? observacoesAdicionais,
     DateTime? dataUltimaAtualizacao,
   }) = _PerfilFamiliar;
+
+  /// Cria um perfil familiar padrão para novos usuários
+  factory PerfilFamiliar.padrao(String userId) {
+    return PerfilFamiliar(
+      id: userId,
+      numeroAdultos: 1,
+      numeroCriancas: 0,
+      restricoesAlimentares: {},
+      observacoesAdicionais: null,
+      dataUltimaAtualizacao: DateTime.now(),
+    );
+  }
 
   factory PerfilFamiliar.fromJson(Map<String, dynamic> json) => _$PerfilFamiliarFromJson(json);
 }

@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../domain/models/user.dart';
 import '../../../../domain/repositories/auth_repository.dart';
+import '../../../../domain/services/user_initialization_service.dart';
 import '../../../../di.dart';
 
 // Estados do Register
@@ -44,8 +45,12 @@ class RegisterCommand {
 // ViewModel do Register
 class RegisterViewModel extends StateNotifier<RegisterState> {
   final AuthRepository _authRepository;
+  final UserInitializationService _userInitializationService;
   
-  RegisterViewModel(this._authRepository) : super(const RegisterInitial());
+  RegisterViewModel(
+    this._authRepository,
+    this._userInitializationService,
+  ) : super(const RegisterInitial());
   
   /// Executa o comando de registro
   Future<void> executeRegister(RegisterCommand command) async {
@@ -66,7 +71,20 @@ class RegisterViewModel extends StateNotifier<RegisterState> {
     );
     
     result.fold(
-      (user) => state = RegisterSuccess(user),
+      (user) async {
+        // Inicializa o novo usuário criando seu perfil padrão
+        final initResult = await _userInitializationService.initializeNewUser(user);
+        
+        initResult.fold(
+          (_) => state = RegisterSuccess(user),
+          (error) {
+            // Se falhar na inicialização, ainda considera o registro bem-sucedido
+            // mas registra o erro para debug
+            print('Erro ao inicializar usuário: ${error.toString()}');
+            state = RegisterSuccess(user);
+          },
+        );
+      },
       (exception) => state = RegisterError(exception.toString()),
     );
   }
@@ -157,5 +175,6 @@ class RegisterViewModel extends StateNotifier<RegisterState> {
 // Provider do ViewModel
 final registerViewModelProvider = StateNotifierProvider<RegisterViewModel, RegisterState>((ref) {
   final authRepository = ref.read(authRepositoryProvider);
-  return RegisterViewModel(authRepository);
+  final userInitializationService = ref.read(userInitializationServiceProvider);
+  return RegisterViewModel(authRepository, userInitializationService);
 });

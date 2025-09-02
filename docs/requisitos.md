@@ -14,12 +14,12 @@ Objetivo principal: **promover refeições saudáveis e simplificar a organizaç
 
 ### 1.2 Escopo  
 O aplicativo contempla:  
-- Cadastro de perfil familiar (quantidade de pessoas, restrições, preferências).  
-- Geração de cardápios semanais via API de IA.  
+- Configuração e gerenciamento de perfil familiar persistente (quantidade de pessoas, restrições, preferências).  
+- Geração de cardápios semanais via API de IA baseada no perfil familiar salvo.  
 - Edição manual do cardápio.  
 - Criação e gerenciamento de listas de compras baseadas no cardápio.  
 - Autenticação de usuário para controle de uso da API de IA.  
-- Armazenamento local de cardápios e listas.  
+- Armazenamento de perfil familiar, cardápios e listas no Firebase Firestore.  
 - Compartilhamento de listas entre usuários.  
 - Configurações de tema e informações de uso.  
 
@@ -31,6 +31,7 @@ O aplicativo contempla:
 
 ### 1.3 Definições  
 - **IA**: Inteligência Artificial externa (ex: OpenAI, Gemini, etc.).  
+- **Perfil Familiar**: Configuração persistente do usuário contendo informações sobre a família (adultos, crianças, restrições alimentares, observações).  
 - **Cardápio Semanal**: Sugestão de refeições para 7 dias (café da manhã, almoço, lanche, jantar, ceia).  
 - **Lista de Compras**: Ingredientes agregados a partir do cardápio.  
 - **API de IA**: Serviço externo utilizado para geração de conteúdo.  
@@ -48,10 +49,10 @@ O aplicativo contempla:
 - **RF1.5**: Dados de autenticação devem ser armazenados de forma segura (ex.: Firebase Auth).
 
 ### 2.2 Perfil Familiar
-- **RF2.1**: O usuário deve informar **a cada geração de cardápio**:  
-  - Quantidade total de pessoas.  
-  - Separação entre adultos e crianças (faixas etárias).  
-- **RF2.2**: O usuário pode selecionar **restrições alimentares** durante a criação do cardápio. Lista de opções:  
+- **RF2.1**: O usuário deve **configurar seu perfil familiar** que será usado como base para todas as gerações de cardápio:  
+  - Quantidade de adultos.  
+  - Quantidade de crianças.  
+- **RF2.2**: O usuário pode selecionar **restrições alimentares** no perfil familiar. Lista de opções:  
   - Glúten  
   - Lactose  
   - Açúcar  
@@ -61,8 +62,10 @@ O aplicativo contempla:
   - Ovos  
   - Ferro (ex.: restrição para pacientes com hemocromatose)  
   - Sal/sódio  
-- **RF2.3**: O usuário pode inserir **observações adicionais** para cardápios (em cada geração).  
-- **RF2.4**: O perfil familiar é configurado **individualmente para cada cardápio**, permitindo flexibilidade para diferentes necessidades familiares ao longo do tempo.
+- **RF2.3**: O usuário pode inserir **observações adicionais** no perfil familiar.  
+- **RF2.4**: O perfil familiar deve ser **salvo no Firebase Firestore** e usado automaticamente em todas as gerações de cardápio.  
+- **RF2.5**: Novos usuários devem ter um **perfil familiar padrão** criado automaticamente (1 adulto, 0 crianças, sem restrições).  
+- **RF2.6**: O usuário pode **editar seu perfil familiar** a qualquer momento através de uma tela específica.
 
 ### 2.3 Cardápios
 - **RF3.1**: O app deve gerar um **cardápio semanal** usando IA, com base no perfil familiar.  
@@ -134,13 +137,19 @@ O aplicativo contempla:
 
 ## 4. Casos de Uso
 
-### 4.1 Gerar Cardápio
+### 4.1 Configurar Perfil Familiar
 - **Ator**: Usuário logado.  
-- **Pré-condição**: Nenhuma (perfil é configurado durante a criação).  
-- **Fluxo**: Configurar perfil familiar → Selecionar tipos de refeição → Gerar via IA → Navegar automaticamente para edição → Editar → Salvar.  
+- **Pré-condição**: Usuário autenticado.  
+- **Fluxo**: Acessar configurações → Editar perfil familiar → Definir adultos/crianças → Selecionar restrições → Adicionar observações → Salvar.  
+- **Pós-condição**: Perfil familiar armazenado no Firebase Firestore.  
+
+### 4.2 Gerar Cardápio
+- **Ator**: Usuário logado.  
+- **Pré-condição**: Perfil familiar configurado.  
+- **Fluxo**: Selecionar tipos de refeição → Gerar via IA (usando perfil salvo) → Navegar automaticamente para edição → Editar → Salvar.  
 - **Pós-condição**: Cardápio armazenado no Firebase Firestore.  
 
-### 4.2 Gerar Lista de Compras
+### 4.3 Gerar Lista de Compras
 - **Ator**: Usuário logado.  
 - **Pré-condição**: Cardápio aprovado.  
 - **Fluxo**: Selecionar cardápio → Definir semanas → Criar lista → Ir para edição → Editar/Compartilhar.  
@@ -159,6 +168,7 @@ O aplicativo contempla:
 - Abas:  
   - **Gerenciar Cardápios** (5.2.1)  
   - **Gerenciar Listas de Compras** (5.2.2)  
+  - **Configurações** (5.2.3)  
 
 #### 5.2.1 Aba: Gerenciar Cardápios
 - Lista de cardápios criados (com data).  
@@ -171,12 +181,18 @@ O aplicativo contempla:
 - Botão para criar nova lista → abre **Tela 5.6**.  
 - Ações em cada lista: Editar (Tela 5.7), Duplicar, Excluir.  
 
-### 5.4 Tela Criar Cardápio
+### 5.3 Tela Configurar Perfil Familiar
 - **Configuração do Perfil Familiar:**
   - Campos: número de adultos, número de crianças.
   - Restrições alimentares (checkboxes: glúten, lactose, açúcar, carne vermelha, frango, peixe, ovos, ferro, sódio).
+  - Campo de observações adicionais.
+- Botão "Salvar perfil" → salva no Firebase e retorna à tela anterior.
+- Indicação visual se o perfil foi salvo com sucesso.
+
+### 5.4 Tela Criar Cardápio
 - Checkboxes para tipos de refeição (café da manhã, almoço, lanche, jantar, ceia).  
-- Campo de observações adicionais.  
+- Exibição do perfil familiar atual (somente leitura).
+- Link para editar perfil familiar (abre **Tela 5.3**).
 - Botão "Gerar cardápio" → leva direto à **Tela 5.5** (Editar cardápio) com o cardápio recém-gerado.  
 
 ### 5.5 Tela Editar Cardápio
@@ -192,13 +208,20 @@ O aplicativo contempla:
 - Ações: Adicionar item, Remover item, Editar nome, Editar observações, Compartilhar lista, Salvar alterações.  
 
 ### 5.8 Tela de Configuração
-- Opções: Logout, Visualizar limites de uso, Seleção de tema (Claro, Escuro, Automático).  
+- Opções: 
+  - Configurar perfil familiar (abre **Tela 5.3**)
+  - Logout
+  - Visualizar limites de uso
+  - Seleção de tema (Claro, Escuro, Automático)  
 
 ---
 
 ## 6. Considerações Técnicas
 - **Tecnologias**: Flutter, Dart, HTTP, Firebase Firestore, Firebase Auth.  
 - **IA**: OpenAI, Gemini ou similar.  
-- **Banco de Dados**: Firebase Firestore com estrutura de coleções por usuário (`users/{userId}/menus`, `users/{userId}/shopping_lists`).  
+- **Banco de Dados**: Firebase Firestore com estrutura de coleções por usuário:
+  - `users/{userId}/profile` - Perfil familiar do usuário
+  - `users/{userId}/menus/{menuId}` - Cardápios do usuário
+  - `users/{userId}/shopping_lists/{listId}` - Listas de compras do usuário
 - **Testes**: Unitários (lógica), integração (API e Firestore), beta com usuários.  
 - **Próximos Passos**: Configuração das regras de segurança do Firestore, implementação dos repositórios e testes de sincronização.

@@ -13,9 +13,16 @@ O NutriPlan é uma solução completa para famílias que desejam organizar suas 
 
 ## ✨ Funcionalidades Principais
 
+### 👨‍👩‍👧‍👦 Perfil Familiar ✅
+- ✅ Configuração persistente do perfil familiar (adultos, crianças, restrições alimentares)
+- ✅ Perfil padrão automático para novos usuários
+- ✅ Edição do perfil a qualquer momento
+- ✅ Sincronização automática com Firebase Firestore
+- ✅ Uso automático do perfil em todas as gerações de cardápio
+
 ### 🍽️ Gestão de Cardápios ✅
 - ✅ Criação automática de cardápios semanais com IA (Google Gemini)
-- ✅ Configuração de perfil familiar integrada (número de pessoas, restrições alimentares)
+- ✅ Geração baseada no perfil familiar salvo (sem reconfiguração a cada cardápio)
 - ✅ Organização por refeições (café da manhã, almoço, jantar, lanches)
 - ✅ Edição manual de refeições (trocar/excluir refeições específicas)
 - ✅ Persistência no Firebase Firestore
@@ -36,6 +43,7 @@ O NutriPlan é uma solução completa para famílias que desejam organizar suas 
 - ✅ Monitoramento de limites de uso da API
 
 ### ⚙️ Configurações ✅
+- ✅ Configuração do perfil familiar
 - ✅ Seleção de tema (claro, escuro, automático)
 - ✅ Visualização de limites de uso da IA
 - ✅ Logout
@@ -88,6 +96,7 @@ lib/
 │       │   └── components/     # Componentes de UI maiores
 │       └── features/
 │           ├── auth/           # Autenticação (login, registro)
+│           ├── profile/        # Perfil familiar (configurar, editar)
 │           ├── menus/          # Cardápios (criar, editar, listar)
 │           ├── shopping/       # Listas de compras
 │           └── settings/       # Configurações do app
