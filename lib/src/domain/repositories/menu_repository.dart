@@ -32,10 +32,20 @@ abstract class MenuRepository {
   /// Remove um cardápio
   Future<Result<void>> removerMenu(String id);
 
-  /// Gera uma refeição alternativa para substituir uma existente
+  /// Gera uma refeição alternativa para substituir uma existente (método legado)
   Future<Result<Refeicao>> gerarRefeicaoAlternativa({
     required PerfilFamiliar perfil,
     required TipoRefeicao tipo,
+    String? observacoesAdicionais,
+  });
+
+  /// Gera uma refeição alternativa com contexto completo do cardápio
+  Future<Result<Refeicao>> gerarRefeicaoAlternativaComContexto({
+    required PerfilFamiliar perfil,
+    required TipoRefeicao tipo,
+    required Menu menu,
+    required DiaSemana dia,
+    required int indiceRefeicao,
     String? observacoesAdicionais,
   });
 

@@ -57,7 +57,7 @@ $observacoes
 ''';
   }
   
-  /// Prompt para geração de refeição alternativa
+  /// Prompt para geração de refeição alternativa (método legado)
   static String gerarRefeicaoAlternativaPrompt({
     required String tipoRefeicao,
     required int numeroPessoas,
@@ -97,6 +97,74 @@ $observacoes
 ```
 
 **IMPORTANTE:** Responda APENAS com o JSON válido, sem texto adicional.
+''';
+  }
+
+  /// Prompt aprimorado para geração de refeição alternativa com contexto do cardápio
+  static String gerarRefeicaoAlternativaComContextoPrompt({
+    required String tipoRefeicao,
+    required int numeroPessoas,
+    required List<String> restricoesAlimentares,
+    required String nomeCardapio,
+    required String diaSemanaSelecionado,
+    required List<String> outrasRefeicoesDoDia,
+    required List<String> refeicoesSemanaAnterior,
+    String? refeicaoOriginal,
+    String? observacoesAdicionais,
+  }) {
+    final restricoes = restricoesAlimentares.isEmpty 
+        ? 'Nenhuma restrição alimentar específica'
+        : restricoesAlimentares.join(', ');
+    
+    final observacoes = observacoesAdicionais?.isNotEmpty == true
+        ? '\n\nObservações adicionais: $observacoesAdicionais'
+        : '';
+    
+    final refeicaoAtual = refeicaoOriginal?.isNotEmpty == true
+        ? '\n\n**Refeição sendo substituída:** $refeicaoOriginal'
+        : '';
+    
+    final outrasRefeicoes = outrasRefeicoesDoDia.isNotEmpty
+        ? '\n\n**Outras refeições do dia ($diaSemanaSelecionado):**\n${outrasRefeicoesDoDia.map((r) => '- $r').join('\n')}'
+        : '';
+    
+    final historicoSemana = refeicoesSemanaAnterior.isNotEmpty
+        ? '\n\n**Refeições similares na semana (para evitar repetição):**\n${refeicoesSemanaAnterior.map((r) => '- $r').join('\n')}'
+        : '';
+    
+    return '''
+Você é um nutricionista especializado em planejamento de cardápios familiares. Crie uma refeição alternativa de $tipoRefeicao que se integre harmoniosamente ao cardápio existente.
+
+**Contexto do Cardápio:**
+- Nome do cardápio: $nomeCardapio
+- Dia da semana: $diaSemanaSelecionado
+- Tipo de refeição: $tipoRefeicao$refeicaoAtual$outrasRefeicoes$historicoSemana
+
+**Perfil da Família:**
+- Número de pessoas: $numeroPessoas
+- Restrições alimentares: $restricoes$observacoes
+
+**Instruções importantes:**
+1. **Harmonia nutricional**: Considere as outras refeições do dia para criar um equilíbrio nutricional
+2. **Variedade**: Evite repetir ingredientes principais das outras refeições do dia e da semana
+3. **Progressão de sabores**: Considere a sequência de sabores ao longo do dia (leve → consistente → moderado)
+4. **Sazonalidade**: Prefira ingredientes da estação quando possível
+5. **Praticidade**: Considere o tempo de preparo adequado para o horário da refeição
+6. **Restrições**: Respeite rigorosamente todas as restrições alimentares informadas
+7. **Acessibilidade**: Use ingredientes facilmente encontrados no Brasil
+8. **Diferenciação**: Crie algo substancialmente diferente da refeição original (se informada)
+
+**Formato de resposta (JSON):**
+```json
+{
+  "tipo": "$tipoRefeicao",
+  "nome": "Nome do prato",
+  "descricao": "Descrição detalhada dos ingredientes e modo de preparo",
+  "observacoes": "Observações específicas sobre nutrição, preparo ou harmonização (opcional)"
+}
+```
+
+**IMPORTANTE:** Responda APENAS com o JSON válido, sem texto adicional antes ou depois.
 ''';
   }
 }

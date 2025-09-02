@@ -22,6 +22,16 @@ abstract class AiApiService {
     String? observacoesAdicionais,
   });
 
+  /// Gera uma refeição alternativa com contexto completo do cardápio
+  Future<Result<Refeicao>> gerarRefeicaoAlternativaComContexto({
+    required PerfilFamiliar perfil,
+    required TipoRefeicao tipo,
+    required Menu menu,
+    required DiaSemana dia,
+    required int indiceRefeicao,
+    String? observacoesAdicionais,
+  });
+
   /// Gera uma lista de compras baseada em um cardápio
   Future<Result<ShoppingList>> gerarListaCompras({
     required Menu menu,

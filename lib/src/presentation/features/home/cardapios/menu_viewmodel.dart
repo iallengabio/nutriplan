@@ -15,6 +15,9 @@ class MenuState {
   final bool isGeneratingMenu;
   final bool isSaving;
   final Refeicao? refeicaoAlternativaGerada;
+  // Mapa para controlar carregamento individual de refeições
+  // Chave: "dia_indice" (ex: "segunda_0", "terca_1")
+  final Map<String, bool> refeicaoCarregando;
 
   const MenuState({
     this.menus = const [],
@@ -24,6 +27,7 @@ class MenuState {
     this.isGeneratingMenu = false,
     this.isSaving = false,
     this.refeicaoAlternativaGerada,
+    this.refeicaoCarregando = const {},
   });
 
   MenuState copyWith({
@@ -34,6 +38,7 @@ class MenuState {
     bool? isGeneratingMenu,
     bool? isSaving,
     Refeicao? refeicaoAlternativaGerada,
+    Map<String, bool>? refeicaoCarregando,
     bool clearError = false,
     bool clearMenuSelecionado = false,
     bool clearRefeicaoAlternativa = false,
@@ -46,6 +51,7 @@ class MenuState {
       isGeneratingMenu: isGeneratingMenu ?? this.isGeneratingMenu,
       isSaving: isSaving ?? this.isSaving,
       refeicaoAlternativaGerada: clearRefeicaoAlternativa ? null : (refeicaoAlternativaGerada ?? this.refeicaoAlternativaGerada),
+      refeicaoCarregando: refeicaoCarregando ?? this.refeicaoCarregando,
     );
   }
 }
@@ -270,7 +276,7 @@ class MenuViewModel extends StateNotifier<MenuState> {
     );
   }
 
-  /// Gera uma refeição alternativa
+  /// Gera uma refeição alternativa (método legado)
   Future<void> gerarRefeicaoAlternativa({
     required PerfilFamiliar perfil,
     required TipoRefeicao tipo,
@@ -298,6 +304,96 @@ class MenuViewModel extends StateNotifier<MenuState> {
         );
       },
     );
+  }
+
+  /// Gera uma refeição alternativa com contexto completo
+  Future<void> gerarRefeicaoAlternativaComContexto({
+    required DiaSemana dia,
+    required int indiceRefeicao,
+    required TipoRefeicao tipo,
+    required PerfilFamiliar perfil,
+    String? observacoesAdicionais,
+  }) async {
+    if (state.menuSelecionado == null) {
+      state = state.copyWith(
+        errorMessage: 'Nenhum cardápio selecionado para gerar alternativa',
+      );
+      return;
+    }
+
+    final chaveRefeicao = '${dia.name}_$indiceRefeicao';
+    
+    // Atualiza o estado de carregamento para esta refeição específica
+    final novoCarregamento = Map<String, bool>.from(state.refeicaoCarregando);
+    novoCarregamento[chaveRefeicao] = true;
+    
+    state = state.copyWith(
+      refeicaoCarregando: novoCarregamento,
+      clearError: true,
+      clearRefeicaoAlternativa: true,
+    );
+
+    try {
+      // Chama o novo método do repository com contexto completo
+      final result = await _menuRepository.gerarRefeicaoAlternativaComContexto(
+        perfil: perfil,
+        tipo: tipo,
+        menu: state.menuSelecionado!,
+        dia: dia,
+        indiceRefeicao: indiceRefeicao,
+        observacoesAdicionais: observacoesAdicionais,
+      );
+
+      result.fold(
+        (refeicao) {
+          // Atualiza a refeição no menu selecionado
+          atualizarRefeicaoNoMenu(
+            dia: dia,
+            indiceRefeicao: indiceRefeicao,
+            novaRefeicao: refeicao,
+          );
+          
+          // Remove o estado de carregamento
+          final carregamentoAtualizado = Map<String, bool>.from(state.refeicaoCarregando);
+          carregamentoAtualizado.remove(chaveRefeicao);
+          
+          state = state.copyWith(
+            refeicaoCarregando: carregamentoAtualizado,
+            refeicaoAlternativaGerada: refeicao,
+          );
+        },
+        (error) {
+          // Remove o estado de carregamento em caso de erro
+          final carregamentoAtualizado = Map<String, bool>.from(state.refeicaoCarregando);
+          carregamentoAtualizado.remove(chaveRefeicao);
+          
+          state = state.copyWith(
+            refeicaoCarregando: carregamentoAtualizado,
+            errorMessage: 'Erro ao gerar refeição alternativa: ${error.toString()}',
+          );
+        },
+      );
+    } catch (e) {
+      // Remove o estado de carregamento em caso de exceção
+      final carregamentoAtualizado = Map<String, bool>.from(state.refeicaoCarregando);
+      carregamentoAtualizado.remove(chaveRefeicao);
+      
+      state = state.copyWith(
+        refeicaoCarregando: carregamentoAtualizado,
+        errorMessage: 'Erro inesperado ao gerar refeição alternativa: $e',
+      );
+    }
+  }
+
+  /// Verifica se uma refeição específica está carregando
+  bool isRefeicaoCarregando(DiaSemana dia, int indiceRefeicao) {
+    final chave = '${dia.name}_$indiceRefeicao';
+    return state.refeicaoCarregando[chave] ?? false;
+  }
+
+  /// Limpa todos os estados de carregamento de refeições
+  void limparCarregamentoRefeicoes() {
+    state = state.copyWith(refeicaoCarregando: {});
   }
 
   /// Marca/desmarca um cardápio como favorito

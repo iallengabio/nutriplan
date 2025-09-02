@@ -80,9 +80,10 @@ class RefeicoesSectionWidget extends StatelessWidget {
                 separatorBuilder: (context, index) => const SizedBox(height: 12),
                 itemBuilder: (context, index) {
                   final refeicao = refeicoesDoDia[index];
+                  final chaveCarregamento = '${diaSelecionado.name}_$index';
                   return RefeicaoCardWidget(
                     refeicao: refeicao,
-                    isLoading: refeicaoCarregando[refeicao.id] ?? false,
+                    isLoading: refeicaoCarregando[chaveCarregamento] ?? false,
                     onEdit: () => onEditarRefeicao(index),
                     onGenerateAlternative: () => onGerarAlternativa(refeicao.tipo, menuViewModel, index),
                     onRemove: () => onRemoverRefeicao(index),

@@ -254,6 +254,54 @@ class FirestoreMenuRepository implements MenuRepository {
   }
 
   @override
+  Future<Result<Refeicao>> gerarRefeicaoAlternativaComContexto({
+    required PerfilFamiliar perfil,
+    required TipoRefeicao tipo,
+    required Menu menu,
+    required DiaSemana dia,
+    required int indiceRefeicao,
+    String? observacoesAdicionais,
+  }) async {
+    try {
+      if (_currentUserId == null) {
+        return Failure(Exception('Usuário não autenticado'));
+      }
+
+      // Verifica rate limiting
+      final canMakeCall = await RateLimitService.canMakeCall(_currentUserId!);
+      if (!canMakeCall) {
+        final remainingCalls = await RateLimitService.getRemainingCalls(_currentUserId!);
+        return Failure(RateLimitExceededException(
+          message: 'Limite diário de gerações atingido. Você pode gerar até ${RateLimitService.maxCallsPerDay} refeições alternativas por dia.',
+          remainingCalls: remainingCalls,
+          maxCalls: RateLimitService.maxCallsPerDay,
+        ));
+      }
+
+      // Gera a refeição alternativa usando IA com contexto
+      final refeicaoResult = await _aiApiService.gerarRefeicaoAlternativaComContexto(
+        perfil: perfil,
+        tipo: tipo,
+        menu: menu,
+        dia: dia,
+        indiceRefeicao: indiceRefeicao,
+        observacoesAdicionais: observacoesAdicionais,
+      );
+
+      return await refeicaoResult.fold(
+        (refeicao) async {
+          // Registra a chamada bem-sucedida
+          await RateLimitService.recordCall(_currentUserId!);
+          return Success(refeicao);
+        },
+        (error) => Failure(Exception(error.toString())),
+      );
+    } catch (e) {
+      return Failure(Exception('Erro ao gerar refeição alternativa com contexto: $e'));
+    }
+  }
+
+  @override
   Future<Result<Menu>> duplicarMenu(String menuId) async {
     try {
       final collection = _menusCollection;

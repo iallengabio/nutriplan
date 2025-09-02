@@ -117,6 +117,76 @@ class GeminiAiService implements AiApiService {
   }
   
   @override
+  Future<Result<Refeicao>> gerarRefeicaoAlternativaComContexto({
+    required PerfilFamiliar perfil,
+    required TipoRefeicao tipo,
+    required Menu menu,
+    required DiaSemana dia,
+    required int indiceRefeicao,
+    String? observacoesAdicionais,
+  }) async {
+    try {
+      // Coleta informações contextuais do cardápio
+      final refeicoesDoDia = menu.refeicoesDoDia(dia);
+      final refeicaoOriginal = indiceRefeicao < refeicoesDoDia.length 
+          ? refeicoesDoDia[indiceRefeicao].nome 
+          : null;
+      
+      final outrasRefeicoesDoDia = refeicoesDoDia
+          .asMap()
+          .entries
+          .where((entry) => entry.key != indiceRefeicao)
+          .map((entry) => '${entry.value.tipo.displayName}: ${entry.value.nome}')
+          .toList();
+      
+      // Coleta refeições similares da semana para evitar repetição
+      final refeicoesSemanaAnterior = <String>[];
+      for (final entry in menu.refeicoesPorDia.entries) {
+        if (entry.key != dia) {
+          for (final refeicao in entry.value) {
+            if (refeicao.tipo == tipo) {
+              refeicoesSemanaAnterior.add('${entry.key.displayName}: ${refeicao.nome}');
+            }
+          }
+        }
+      }
+      
+      final prompt = MenuPrompts.gerarRefeicaoAlternativaComContextoPrompt(
+        tipoRefeicao: tipo.displayName,
+        numeroPessoas: perfil.totalPessoas,
+        restricoesAlimentares: perfil.restricoesAlimentares.map((r) => r.displayName).toList(),
+        nomeCardapio: menu.nome,
+        diaSemanaSelecionado: dia.displayName,
+        outrasRefeicoesDoDia: outrasRefeicoesDoDia,
+        refeicoesSemanaAnterior: refeicoesSemanaAnterior,
+        refeicaoOriginal: refeicaoOriginal,
+        observacoesAdicionais: observacoesAdicionais,
+      );
+      
+      final response = await _model.generateContent([
+        Content.text(prompt),
+      ]);
+      
+      if (response.text == null || response.text!.isEmpty) {
+        return Failure(AiApiServiceError('Resposta vazia da API do Gemini'));
+      }
+      
+      final refeicao = _parseRefeicaoFromJson(response.text!);
+      return Success(refeicao);
+      
+    } on SocketException catch (e) {
+      return Failure(AiNetworkError('Erro de conexão: ${e.message}'));
+    } on GenerativeAIException catch (e) {
+      if (e.message.contains('quota') || e.message.contains('limit')) {
+        return Failure(AiRateLimitError('Limite de uso da API atingido: ${e.message}'));
+      }
+      return Failure(AiApiServiceError('Erro da API Gemini: ${e.message}'));
+    } catch (e) {
+      return Failure(AiApiServiceError('Erro inesperado: $e'));
+    }
+  }
+  
+  @override
   Future<Result<ShoppingList>> gerarListaCompras({
     required Menu menu,
     required int numeroSemanas,

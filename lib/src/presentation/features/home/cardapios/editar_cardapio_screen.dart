@@ -30,8 +30,7 @@ class _EditarCardapioScreenState extends ConsumerState<EditarCardapioScreen> {
   DiaSemana _diaSelecionado = DiaSemana.segunda;
   late ScrollController _scrollController;
   
-  // Mapa para controlar o estado de carregamento de cada refeição
-  final Map<String, bool> _refeicaoCarregando = {};
+  // Removido: agora usa o estado de carregamento do ViewModel
 
   @override
   void initState() {
@@ -122,7 +121,7 @@ class _EditarCardapioScreenState extends ConsumerState<EditarCardapioScreen> {
                       _centralizarDiaSelecionado();
                     },
                     scrollController: _scrollController,
-                    refeicaoCarregando: _refeicaoCarregando,
+                    refeicaoCarregando: menuState.refeicaoCarregando,
                     onAdicionarRefeicao: _adicionarRefeicao,
                     onEditarRefeicao: _editarRefeicao,
                     onGerarAlternativa: _gerarAlternativa,
@@ -205,27 +204,27 @@ class _EditarCardapioScreenState extends ConsumerState<EditarCardapioScreen> {
     if (refeicaoIndex >= refeicoesDoDia.length) return;
     
     final refeicaoOriginal = refeicoesDoDia[refeicaoIndex];
-    final refeicaoId = refeicaoOriginal.id;
     
-    // Marcar refeição como carregando
-    setState(() {
-      _refeicaoCarregando[refeicaoId] = true;
-    });
+    // Primeiro, selecionar o menu no ViewModel para que o contexto esteja disponível
+    menuViewModel.selecionarMenu(_menuEditado);
     
     try {
       // Criar um perfil familiar baseado no menu atual
       final perfil = PerfilFamiliar(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
-        numeroAdultos: 2, // Valor padrão, pode ser configurado
-        numeroCriancas: 0, // Valor padrão, pode ser configurado
-        restricoesAlimentares: <RestricaoAlimentar>{}, // Pode ser configurado baseado no menu
+        numeroAdultos: (_menuEditado.numberOfPeople / 2).ceil(),
+        numeroCriancas: (_menuEditado.numberOfPeople / 2).floor(),
+        restricoesAlimentares: <RestricaoAlimentar>{},
         observacoesAdicionais: _menuEditado.observacoes,
         dataUltimaAtualizacao: DateTime.now(),
       );
 
-      await menuViewModel.gerarRefeicaoAlternativa(
-        perfil: perfil,
+      // Usar o novo método com contexto completo
+      await menuViewModel.gerarRefeicaoAlternativaComContexto(
+        dia: _diaSelecionado,
+        indiceRefeicao: refeicaoIndex,
         tipo: tipo,
+        perfil: perfil,
         observacoesAdicionais: 'Gerar alternativa para ${tipo.displayName}',
       );
 
@@ -240,36 +239,32 @@ class _EditarCardapioScreenState extends ConsumerState<EditarCardapioScreen> {
             ),
           );
         }
-      } else if (currentState.refeicaoAlternativaGerada != null) {
-        // Substituir a refeição no menu local
-        final novaRefeicao = currentState.refeicaoAlternativaGerada!;
-        
-        setState(() {
-          _menuEditado = _menuEditado.substituirRefeicao(
-            _diaSelecionado,
-            refeicaoOriginal.id,
-            novaRefeicao,
-          );
-        });
-        
-        // Limpar a refeição alternativa do estado
-        menuViewModel.limparRefeicaoAlternativa();
-        
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Refeição "${refeicaoOriginal.nome}" foi substituída por "${novaRefeicao.nome}"!'),
-              backgroundColor: Colors.green,
-            ),
-          );
+      } else {
+        // O menu já foi atualizado no ViewModel, então atualizamos o estado local
+        final menuAtualizado = currentState.menuSelecionado;
+        if (menuAtualizado != null) {
+          setState(() {
+            _menuEditado = menuAtualizado;
+          });
+          
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Refeição "${refeicaoOriginal.nome}" foi substituída com sucesso!'),
+                backgroundColor: Colors.green,
+              ),
+            );
+          }
         }
       }
-    } finally {
-      // Sempre limpar o estado de carregamento
+    } catch (e) {
       if (mounted) {
-        setState(() {
-          _refeicaoCarregando[refeicaoId] = false;
-        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erro ao gerar alternativa: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
       }
     }
   }

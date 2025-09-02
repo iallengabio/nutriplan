@@ -51,6 +51,27 @@ class AiApiServiceMock implements AiApiService {
   }
 
   @override
+  Future<Result<Refeicao>> gerarRefeicaoAlternativaComContexto({
+    required PerfilFamiliar perfil,
+    required TipoRefeicao tipo,
+    required Menu menu,
+    required DiaSemana dia,
+    required int indiceRefeicao,
+    String? observacoesAdicionais,
+  }) async {
+    // Simula delay da API
+    await Future.delayed(const Duration(seconds: 1));
+
+    try {
+      // Usa o mesmo método mock, mas com contexto adicional
+      final refeicao = _criarRefeicaoMock(tipo, perfil);
+      return Success(refeicao);
+    } catch (e) {
+      return Failure(AiApiServiceError('Erro ao gerar refeição alternativa com contexto: $e'));
+    }
+  }
+
+  @override
   Future<Result<ShoppingList>> gerarListaCompras({
     required Menu menu,
     required int numeroSemanas,
