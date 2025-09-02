@@ -44,20 +44,6 @@ class _CreateShoppingListFromMenuPageState extends ConsumerState<CreateShoppingL
     return Scaffold(
       appBar: AppBar(
         title: const Text('Nova Lista de Compras'),
-        actions: [
-          TextButton(
-            onPressed: (_isGenerating || _menuSelecionado == null) 
-                ? null 
-                : () => _gerarListaDeCompras(),
-            child: _isGenerating
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Text('Gerar Lista'),
-          ),
-        ],
       ),
       body: Form(
         key: _formKey,
@@ -75,6 +61,8 @@ class _CreateShoppingListFromMenuPageState extends ConsumerState<CreateShoppingL
                 const SizedBox(height: 16),
                 _buildErrorSection(shoppingListState.errorMessage!),
               ],
+              const SizedBox(height: 16),
+              _buildGenerateButton(),
             ],
           ),
         ),
@@ -375,6 +363,61 @@ class _CreateShoppingListFromMenuPageState extends ConsumerState<CreateShoppingL
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildGenerateButton() {
+    return SizedBox(
+      width: double.infinity,
+      height: 56,
+      child: ElevatedButton(
+        onPressed: (_isGenerating || _menuSelecionado == null) 
+            ? null 
+            : () => _gerarListaDeCompras(),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Theme.of(context).colorScheme.primary,
+          foregroundColor: Theme.of(context).colorScheme.onPrimary,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+        child: _isGenerating
+            ? Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    'Gerando Lista...',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              )
+            : Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.shopping_cart_outlined),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Gerar Lista de Compras',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: Theme.of(context).colorScheme.onPrimary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
       ),
     );
   }
