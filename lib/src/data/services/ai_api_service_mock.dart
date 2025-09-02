@@ -235,7 +235,7 @@ class AiApiServiceMock implements AiApiService {
     final itens = <ShoppingItem>[];
     
     // Usa numberOfPeople do cardápio ou como fallback
-    final totalPessoas = numberOfPeople ?? menu.numberOfPeople ?? 4;
+    final totalPessoas = numberOfPeople ?? menu.numberOfPeople;
     
     // Ingredientes básicos que sempre aparecem (ajustados para o número de pessoas)
     final ingredientesBasicos = {

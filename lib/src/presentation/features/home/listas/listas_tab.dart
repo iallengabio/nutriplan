@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/extensions/date_extensions.dart';
 import '../../../../di.dart';
-import '../../shopping/pages/create_shopping_list_from_menu_page.dart';
-import 'create_shopping_list_page.dart';
 import 'edit_shopping_list_page.dart';
 import 'shopping_list_viewmodel.dart';
 import 'widgets/delete_confirmation_dialog.dart';
@@ -99,7 +97,7 @@ class _ListasTabState extends ConsumerState<ListasTab> {
       );
     }
 
-    if (state.shoppingLists?.isEmpty ?? true) {
+    if (state.shoppingLists.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -131,9 +129,9 @@ class _ListasTabState extends ConsumerState<ListasTab> {
     return RefreshIndicator(
       onRefresh: () async => viewModel.carregarListasDeCompras(),
       child: ListView.builder(
-        itemCount: state.shoppingLists!.length,
+        itemCount: state.shoppingLists.length,
         itemBuilder: (context, index) {
-          final lista = state.shoppingLists![index];
+          final lista = state.shoppingLists[index];
           final totalItens = lista.itens.length;
           final itensComprados = lista.itens.where((item) => item.comprado).length;
           
@@ -156,7 +154,7 @@ class _ListasTabState extends ConsumerState<ListasTab> {
                   if (totalItens > 0)
                     LinearProgressIndicator(
                       value: itensComprados / totalItens,
-                      backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
+                      backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                     ),
                 ],
               ),
@@ -230,39 +228,6 @@ class _ListasTabState extends ConsumerState<ListasTab> {
     );
   }
 
-  void _showCreateListDialog(BuildContext context, ShoppingListViewModel viewModel) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Nova Lista de Compras'),
-        content: const Text('Como você gostaria de criar a lista?'),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => const CreateShoppingListFromMenuPage(),
-                ),
-              );
-            },
-            child: const Text('Baseada em Cardápio'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => const CreateShoppingListPage(),
-                ),
-              );
-            },
-            child: const Text('Lista Manual'),
-          ),
-        ],
-      ),
-    );
-  }
 
   void _showDeleteListaDialog(BuildContext context, dynamic lista, ShoppingListViewModel viewModel) {
     showDialog(
@@ -311,25 +276,4 @@ class _ListasTabState extends ConsumerState<ListasTab> {
     );
   }
 
-  void _importarLista(BuildContext context, ShoppingListViewModel viewModel) async {
-    try {
-      await viewModel.importarLista();
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Lista importada com sucesso!'),
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erro ao importar lista: $e'),
-            backgroundColor: Theme.of(context).colorScheme.error,
-          ),
-        );
-      }
-    }
-  }
 }

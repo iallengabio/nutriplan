@@ -44,7 +44,7 @@ class FirestoreShoppingListRepository implements ShoppingListRepository {
       // Verifica rate limiting
       final canMakeCall = await RateLimitService.canMakeCall(_currentUserId!);
       if (!canMakeCall) {
-        final remainingCalls = await RateLimitService.getRemainingCalls(_currentUserId!);
+        await RateLimitService.getRemainingCalls(_currentUserId!);
         return Failure(Exception(
           'Limite diário de gerações atingido. Você pode gerar até ${RateLimitService.maxCallsPerDay} listas por dia.',
         ));

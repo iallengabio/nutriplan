@@ -308,7 +308,7 @@ class GeminiAiService implements AiApiService {
       for (int i = 0; i < itensData.length; i++) {
         final itemData = itensData[i] as Map<String, dynamic>;
         itens.add(ShoppingItem(
-          id: DateTime.now().millisecondsSinceEpoch.toString() + '_$i',
+          id: '${DateTime.now().millisecondsSinceEpoch}_$i',
           nome: itemData['nome'] ?? '',
           quantidade: itemData['quantidade'] ?? '',
           categoria: itemData['categoria'],

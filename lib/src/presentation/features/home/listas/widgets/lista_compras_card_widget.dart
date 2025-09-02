@@ -44,7 +44,7 @@ class ListaComprasCardWidget extends StatelessWidget {
             if (totalItens > 0)
               LinearProgressIndicator(
                 value: itensComprados / totalItens,
-                backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
+                backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
               ),
           ],
         ),

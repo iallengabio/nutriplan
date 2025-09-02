@@ -143,7 +143,7 @@ class _ApiUsageWidgetState extends ConsumerState<ApiUsageWidget> {
             // Barra de progresso
             LinearProgressIndicator(
               value: progress,
-              backgroundColor: colorScheme.surfaceVariant,
+              backgroundColor: colorScheme.surfaceContainerHighest,
               valueColor: AlwaysStoppedAnimation<Color>(progressColor),
             ),
             const SizedBox(height: 8),

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../core/extensions/date_extensions.dart';
 import '../../../../domain/models/menu.dart';
 import '../../../../domain/models/perfil_familiar.dart';
 import '../../../../domain/models/refeicao.dart';
@@ -10,9 +9,7 @@ import 'menu_viewmodel.dart';
 import 'widgets/info_basica_widget.dart';
 import 'widgets/info_perfil_widget.dart';
 import 'widgets/observacoes_widget.dart';
-import 'widgets/refeicao_card_widget.dart';
 import 'widgets/refeicoes_section_widget.dart';
-import 'widgets/seletor_dia_widget.dart';
 
 class EditarCardapioScreen extends ConsumerStatefulWidget {
   final Menu menu;
@@ -150,20 +147,6 @@ class _EditarCardapioScreenState extends ConsumerState<EditarCardapioScreen> {
 
 
 
-  Color _getTipoRefeicaoColor(TipoRefeicao tipo) {
-    switch (tipo) {
-      case TipoRefeicao.cafeManha:
-        return Colors.orange;
-      case TipoRefeicao.lanche:
-        return Colors.green;
-      case TipoRefeicao.almoco:
-        return Colors.blue;
-      case TipoRefeicao.jantar:
-        return Colors.purple;
-      case TipoRefeicao.ceia:
-        return Colors.indigo;
-    }
-  }
 
 
 

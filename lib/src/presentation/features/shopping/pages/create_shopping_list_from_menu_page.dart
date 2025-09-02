@@ -4,7 +4,6 @@ import '../../../../core/extensions/date_extensions.dart';
 import '../../../../di.dart';
 import '../../../../domain/models/menu.dart';
 import '../../home/cardapios/menu_viewmodel.dart';
-import '../../home/listas/shopping_list_viewmodel.dart';
 
 class CreateShoppingListFromMenuPage extends ConsumerStatefulWidget {
   const CreateShoppingListFromMenuPage({super.key});

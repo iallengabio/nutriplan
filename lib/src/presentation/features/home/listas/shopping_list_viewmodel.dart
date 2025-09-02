@@ -340,7 +340,7 @@ class ShoppingListViewModel extends StateNotifier<ShoppingListState> {
     result.fold(
       (listaSalva) {
         // Adiciona a nova lista no início da lista local
-        final listasAtualizadas = List<ShoppingList>.from(state.shoppingLists ?? []);
+        final listasAtualizadas = List<ShoppingList>.from(state.shoppingLists);
         listasAtualizadas.insert(0, listaSalva);
         
         state = state.copyWith(

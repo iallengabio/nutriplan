@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../di.dart';
-import 'shopping_list_viewmodel.dart';
 import '../../../../domain/models/shopping_list.dart';
 import 'widgets/lista_info_basica_widget.dart';
 import 'widgets/item_lista_card_widget.dart';
 import 'widgets/adicionar_item_dialog.dart';
-import 'widgets/delete_confirmation_dialog.dart';
 
 class EditShoppingListPage extends ConsumerStatefulWidget {
   final ShoppingList shoppingList;
@@ -167,7 +165,7 @@ class _EditShoppingListPageState extends ConsumerState<EditShoppingListPage> {
                         Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.surfaceVariant,
+                            color: Theme.of(context).colorScheme.surfaceContainerHighest,
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Row(

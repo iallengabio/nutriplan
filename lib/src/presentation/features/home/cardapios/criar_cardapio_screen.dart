@@ -162,11 +162,5 @@ class _CriarCardapioScreenState extends ConsumerState<CriarCardapioScreen> {
     }
   }
 
-  String _getRestricaoLabel(RestricaoAlimentar restricao) {
-    return restricao.displayName;
-  }
 
-  String _getTipoRefeicaoLabel(TipoRefeicao tipo) {
-    return tipo.displayName;
-  }
 }
