@@ -50,6 +50,7 @@ class GeminiAiService implements AiApiService {
         restricoesAlimentares: perfil.restricoesAlimentares.map((r) => r.displayName).toList(),
         tiposRefeicao: tiposRefeicao.map((t) => t.displayName).toList(),
         observacoesAdicionais: observacoesAdicionais,
+        observacoesPerfil: perfil.observacoesAdicionais,
       );
       
       final response = await _model.generateContent([
@@ -91,6 +92,7 @@ class GeminiAiService implements AiApiService {
         numeroPessoas: perfil.totalPessoas,
         restricoesAlimentares: perfil.restricoesAlimentares.map((r) => r.displayName).toList(),
         observacoesAdicionais: observacoesAdicionais,
+        observacoesPerfil: perfil.observacoesAdicionais,
       );
       
       final response = await _model.generateContent([
@@ -161,6 +163,7 @@ class GeminiAiService implements AiApiService {
         refeicoesSemanaAnterior: refeicoesSemanaAnterior,
         refeicaoOriginal: refeicaoOriginal,
         observacoesAdicionais: observacoesAdicionais,
+        observacoesPerfil: perfil.observacoesAdicionais,
       );
       
       final response = await _model.generateContent([

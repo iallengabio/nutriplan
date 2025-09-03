@@ -6,13 +6,23 @@ class MenuPrompts {
     required List<String> restricoesAlimentares,
     required List<String> tiposRefeicao,
     String? observacoesAdicionais,
+    String? observacoesPerfil,
   }) {
     final restricoes = restricoesAlimentares.isEmpty 
         ? 'Nenhuma restrição alimentar específica'
         : restricoesAlimentares.join(', ');
     
-    final observacoes = observacoesAdicionais?.isNotEmpty == true
-        ? '\n\nObservações adicionais: $observacoesAdicionais'
+    // Combina observações do perfil familiar e observações extras do cardápio
+    final todasObservacoes = <String>[];
+    if (observacoesPerfil?.isNotEmpty == true) {
+      todasObservacoes.add('Observações do perfil familiar: $observacoesPerfil');
+    }
+    if (observacoesAdicionais?.isNotEmpty == true) {
+      todasObservacoes.add('Observações específicas do cardápio: $observacoesAdicionais');
+    }
+    
+    final observacoes = todasObservacoes.isNotEmpty
+        ? '\n\n${todasObservacoes.join('\n')}'
         : '';
     
     return '''
@@ -63,13 +73,23 @@ $observacoes
     required int numeroPessoas,
     required List<String> restricoesAlimentares,
     String? observacoesAdicionais,
+    String? observacoesPerfil,
   }) {
     final restricoes = restricoesAlimentares.isEmpty 
         ? 'Nenhuma restrição alimentar específica'
         : restricoesAlimentares.join(', ');
     
-    final observacoes = observacoesAdicionais?.isNotEmpty == true
-        ? '\n\nObservações adicionais: $observacoesAdicionais'
+    // Combina observações do perfil familiar e observações extras
+    final todasObservacoes = <String>[];
+    if (observacoesPerfil?.isNotEmpty == true) {
+      todasObservacoes.add('Observações do perfil familiar: $observacoesPerfil');
+    }
+    if (observacoesAdicionais?.isNotEmpty == true) {
+      todasObservacoes.add('Observações específicas: $observacoesAdicionais');
+    }
+    
+    final observacoes = todasObservacoes.isNotEmpty
+        ? '\n\n${todasObservacoes.join('\n')}'
         : '';
     
     return '''
@@ -111,13 +131,23 @@ $observacoes
     required List<String> refeicoesSemanaAnterior,
     String? refeicaoOriginal,
     String? observacoesAdicionais,
+    String? observacoesPerfil,
   }) {
     final restricoes = restricoesAlimentares.isEmpty 
         ? 'Nenhuma restrição alimentar específica'
         : restricoesAlimentares.join(', ');
     
-    final observacoes = observacoesAdicionais?.isNotEmpty == true
-        ? '\n\nObservações adicionais: $observacoesAdicionais'
+    // Combina observações do perfil familiar e observações extras
+    final todasObservacoes = <String>[];
+    if (observacoesPerfil?.isNotEmpty == true) {
+      todasObservacoes.add('Observações do perfil familiar: $observacoesPerfil');
+    }
+    if (observacoesAdicionais?.isNotEmpty == true) {
+      todasObservacoes.add('Observações específicas: $observacoesAdicionais');
+    }
+    
+    final observacoes = todasObservacoes.isNotEmpty
+        ? '\n\n${todasObservacoes.join('\n')}'
         : '';
     
     final refeicaoAtual = refeicaoOriginal?.isNotEmpty == true
